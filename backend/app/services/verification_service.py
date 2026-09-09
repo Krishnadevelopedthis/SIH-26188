@@ -62,7 +62,6 @@ def verify_document(image_path: str) -> VerificationResponse:
         texts=ocr_result["texts"],
         mrz_lines=passport_result.get("mrz_lines", []),
         viz_fields=viz_fields,
-        viz_malformed=passport_result.get("viz_malformed", {}),
     )
 
     if not detection.is_document:

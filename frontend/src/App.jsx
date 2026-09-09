@@ -18,12 +18,13 @@ import { useHistory } from './hooks/useHistory';
 export default function App() {
   const verifyHook = useVerification();
   const historyHook = useHistory();
+  const { addRecord } = historyHook;
 
   const handleResult = useCallback(
     (result, file) => {
-      historyHook.addRecord(result, file);
+      addRecord(result, file);
     },
-    [historyHook.addRecord]
+    [addRecord]
   );
 
   return (

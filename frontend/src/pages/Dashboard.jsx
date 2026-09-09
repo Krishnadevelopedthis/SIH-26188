@@ -62,6 +62,7 @@ export default function Dashboard({ history }) {
     <div>
       {/* ── Hero / Header ───────────────────────────────────── */}
       <div
+        className="dashboard-hero"
         ref={vantaRef}
         style={{
           position: 'relative',
@@ -97,7 +98,7 @@ export default function Dashboard({ history }) {
       </div>
 
       {/* ── Content ─────────────────────────────────────────── */}
-      <div style={{ padding: '32px 32px', maxWidth: 1100 }}>
+      <div className="dashboard-content">
 
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
@@ -109,10 +110,10 @@ export default function Dashboard({ history }) {
         </div>
 
         {/* Quick action + recent */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24 }}>
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24 }}>
 
           {/* Quick action */}
-          <Card style={{ padding: 24 }}>
+          <Card className="card-interactive" style={{ padding: 24 }}>
             <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: 4, color: 'var(--color-text-primary)' }}>Quick Action</div>
             <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
               Upload a passport to begin a new verification screening.
@@ -123,7 +124,7 @@ export default function Dashboard({ history }) {
           </Card>
 
           {/* Recent verifications */}
-          <Card>
+          <Card className="card-interactive">
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', fontWeight: 600 }}>Recent Verifications</span>
               {history.length > 0 && (

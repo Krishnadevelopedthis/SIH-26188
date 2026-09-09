@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ScanLine, ClipboardList, Settings,
-  Shield, ChevronRight, Menu, X, Circle,
+  Shield, ChevronRight, Menu, Circle,
 } from 'lucide-react';
 import { USE_MOCK } from '../../api/verification';
 
@@ -24,7 +24,13 @@ export default function AppShell({ children }) {
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
 
       {/* ── Sidebar (sticky, not fixed, on desktop) ─── */}
-      <aside style={{
+      <button
+        className="sidebar-backdrop"
+        aria-label="Close navigation"
+        onClick={() => setSidebarOpen(false)}
+        style={{ display: 'none', position: 'fixed', inset: 0, zIndex: 250, border: 0, background: 'rgba(9, 21, 38, .45)', backdropFilter: 'blur(2px)' }}
+      />
+      <aside className={`app-sidebar${sidebarOpen ? ' open' : ''}`} style={{
         width: 'var(--sidebar-width)',
         minHeight: '100vh',
         background: 'var(--color-brand)',
@@ -55,6 +61,7 @@ export default function AppShell({ children }) {
               key={to}
               to={to}
               end={to === '/'}
+              onClick={() => setSidebarOpen(false)}
               style={({ isActive }) => ({
                 display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px',
                 borderRadius: 'var(--radius-md)',
@@ -84,7 +91,7 @@ export default function AppShell({ children }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: '100vh' }}>
 
         {/* Topbar */}
-        <header style={{
+        <header className="topbar" style={{
           height: 'var(--topbar-height)',
           background: 'var(--color-surface)',
           borderBottom: '1px solid var(--color-border)',
@@ -94,16 +101,21 @@ export default function AppShell({ children }) {
           position: 'sticky', top: 0, zIndex: 100,
           flexShrink: 0,
         }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="mobile-menu-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-brand)', borderRadius: 9, padding: 8, cursor: 'pointer' }}>
+              <Menu size={17} />
+            </button>
           {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '12.5px' }}>
+          <div className="topbar-context" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '12.5px' }}>
             <span style={{ color: 'var(--color-text-muted)' }}>Immigration Console</span>
             <ChevronRight size={13} style={{ color: 'var(--color-text-muted)' }} />
             <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{pageTitle}</span>
           </div>
+          </div>
 
           {/* Officer */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ textAlign: 'right' }}>
+            <div className="officer-copy" style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.2 }}>Officer K. Sharma</div>
               <div style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>Gate 7 — Terminal 2</div>
             </div>

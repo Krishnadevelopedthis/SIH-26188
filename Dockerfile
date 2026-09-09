@@ -9,6 +9,7 @@ COPY ml/requirements.txt ./ml/requirements.txt
 COPY ocr/requirements.txt ./ocr/requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir "uvicorn[standard]"
 
 COPY backend ./backend
 COPY ml ./ml

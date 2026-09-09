@@ -9,6 +9,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  HelpCircle,
   ChevronDown,
   ChevronUp,
   RotateCcw,
@@ -683,6 +684,27 @@ function ResultView({
       icon: <XCircle size={22} />,
       label: 'Document flagged. Do not clear without supervisor.',
     },
+
+    // Nothing was screened, so these carry no risk score. They are styled
+    // apart from CLEAR and HIGH-RISK on purpose: an officer must not read
+    // "could not be screened" as either a pass or an accusation.
+    UNREADABLE: {
+      color: 'var(--color-info)',
+      bg: 'var(--color-info-bg)',
+      border: 'var(--color-border-strong)',
+      icon: <HelpCircle size={22} />,
+      label: 'Image could not be read. Rescan the document.',
+      unscreened: true,
+    },
+
+    NOT_A_DOCUMENT: {
+      color: 'var(--color-info)',
+      bg: 'var(--color-info-bg)',
+      border: 'var(--color-border-strong)',
+      icon: <HelpCircle size={22} />,
+      label: 'No travel document found in this image.',
+      unscreened: true,
+    },
   };
 
   const cfg =
@@ -751,14 +773,20 @@ function ResultView({
               color: 'var(--color-text-secondary)',
             }}
           >
-            Risk score:{' '}
-            <strong style={{ color: cfg.color }}>
-              {risk_score}/100
-            </strong>
+            {cfg.unscreened ? (
+              'Not screened — no risk score applies.'
+            ) : (
+              <>
+                Risk score:{' '}
+                <strong style={{ color: cfg.color }}>
+                  {risk_score}/100
+                </strong>
+              </>
+            )}
           </div>
         </div>
 
-        <RiskBar score={risk_score} />
+        {!cfg.unscreened && <RiskBar score={risk_score} />}
       </div>
 
       <div

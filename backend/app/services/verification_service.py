@@ -9,6 +9,7 @@ from backend.app.schemas.verification import (
     VerificationResponse,
 )
 from backend.app.services.consistency import check_consistency
+from backend.app.services.document_detector import detect_document
 from backend.app.services.expiry_validator import validate_expiry
 from backend.app.services.risk_engine import calculate_risk
 from ml.src.inference.pipeline import analyze_passport
@@ -45,6 +46,42 @@ def verify_document(image_path: str) -> VerificationResponse:
         {},
     )
 
+    viz_fields = passport_result.get(
+        "viz_fields",
+        {},
+    )
+
+    # ---------------------------------------------------------
+    # Is this a travel document at all?
+    #
+    # Everything below assumes it is. Scoring a holiday photo against those
+    # assumptions produces a confident accusation about a document nobody
+    # submitted, so stop here instead.
+    # ---------------------------------------------------------
+    detection = detect_document(
+        texts=ocr_result["texts"],
+        mrz_lines=passport_result.get("mrz_lines", []),
+        viz_fields=viz_fields,
+    )
+
+    if not detection.is_document:
+        print(
+            f"[TIMING] "
+            f"OCR+MRZ={ocr_mrz_time:.2f}s | "
+            f"screening skipped ({detection.status})"
+        )
+
+        return VerificationResponse(
+            status=detection.status,
+            risk_score=0,
+            document=DocumentInfo(),
+            checks=VerificationChecks(
+                ocr=ocr_result["status"],
+            ),
+            mrz=MRZInfo(),
+            reasons=[detection.reason],
+        )
+
     # ---------------------------------------------------------
     # Expiry validation
     # ---------------------------------------------------------
@@ -63,7 +100,7 @@ def verify_document(image_path: str) -> VerificationResponse:
 
     consistency = check_consistency(
         mrz=mrz_result,
-        viz_fields=passport_result.get("viz_fields", {}),
+        viz_fields=viz_fields,
     )
 
     consistency_time = perf_counter() - start
@@ -109,11 +146,6 @@ def verify_document(image_path: str) -> VerificationResponse:
     if ocr_result["status"] == "FAIL":
         reasons.append(
             "OCR failed to extract readable passport text."
-        )
-
-    if mrz_result["status"] == "FAIL":
-        reasons.append(
-            "MRZ validation failed."
         )
 
     if expiry_reason:

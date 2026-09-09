@@ -36,7 +36,14 @@ export function Badge({ children, variant = 'default', size = 'sm' }) {
 /* ── StatusBadge ─────────────────────────────────────────────────── */
 export function StatusBadge({ status, size = 'sm' }) {
   const map = { CLEAR: 'clear', REVIEW: 'review', 'HIGH-RISK': 'risk' };
-  return <Badge variant={map[status] || 'default'} size={size}>{status}</Badge>;
+  // The two unscreened outcomes keep the neutral variant and read as words
+  // rather than as the API's constant.
+  const label = { UNREADABLE: 'UNREADABLE', NOT_A_DOCUMENT: 'NOT A DOCUMENT' };
+  return (
+    <Badge variant={map[status] || 'default'} size={size}>
+      {label[status] || status}
+    </Badge>
+  );
 }
 
 /* ── CheckBadge ──────────────────────────────────────────────────── */

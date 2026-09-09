@@ -352,6 +352,9 @@ def verify_passport_identity(image_path: str) -> dict:
                 "status": "PASS" if texts else "FAIL",
                 "texts": texts,
             },
+
+            "mrz_lines": mrz_lines,
+
             "mrz": {
                 "status": "FAIL",
                 "valid": False,
@@ -432,6 +435,8 @@ def verify_passport_identity(image_path: str) -> dict:
             "status": "PASS" if texts else "FAIL",
             "texts": texts,
         },
+
+        "mrz_lines": mrz_lines,
 
         "mrz": {
             "status": "PASS" if mrz_result.valid else "FAIL",

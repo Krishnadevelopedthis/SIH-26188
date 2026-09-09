@@ -2,11 +2,15 @@
 Rebuild the copy-move samples in the committed demo dataset.
 
 The demo dataset was rendered at 1000x640 by a generator that is not in this
-repository, while create_copy_paste() carried a pixel box calibrated for the
-1200x760 page. On the smaller page that box fell in blank margin, so every
-copy_paste sample was saved identical to the genuine document it came from and
-carried the opposite label. This regenerates those samples from their genuine
-sources using the corrected, fraction-based operation.
+repository, and its fields sit in a single left-hand column rather than the
+two-column layout create_document() draws. create_copy_paste() carried a pixel
+box for that other layout, which on this page falls in the blank gutter between
+the field column and the portrait - so every copy_paste sample was saved
+identical to the genuine document it came from, under the opposite label.
+
+The operation now takes its boxes from the caller. The demo layout is measured
+below, and the genuine sources are re-tampered through the same code path the
+generator uses.
 """
 
 from pathlib import Path
@@ -21,6 +25,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATASET_DIR = PROJECT_ROOT / "data" / "demo_dataset"
 
 SUFFIX = "_copy_paste"
+
+# The demo page's left-hand field column, measured from the rendered images.
+# The birth date is duplicated over the passport number: the passport number
+# carries an MRZ check digit, so the forged page contradicts a value the MRZ
+# can be trusted on.
+DEMO_SOURCE_BOX = (36, 400, 320, 436)
+DEMO_TARGET_BOX = (36, 180, 320, 216)
 
 
 def source_document_id(folder_name: str) -> str:
@@ -67,7 +78,11 @@ def rebuild() -> None:
         with Image.open(genuine_path) as genuine:
             genuine = genuine.convert("RGB")
 
-            tampered = create_copy_paste(genuine)
+            tampered = create_copy_paste(
+                genuine,
+                source_box=DEMO_SOURCE_BOX,
+                target_box=DEMO_TARGET_BOX,
+            )
 
             # A manipulation that changes nothing is a labelling error.
             if tampered.tobytes() == genuine.tobytes():

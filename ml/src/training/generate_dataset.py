@@ -18,6 +18,44 @@ IMAGE_WIDTH = 1200
 IMAGE_HEIGHT = 760
 
 
+# Layout of the page create_document() draws.
+#
+# The tampering operations read these rather than carrying pixel boxes of their
+# own. A hard-coded box is silently wrong the moment the page is drawn at
+# another size or the rows move, and a manipulation that lands on margin
+# produces a sample labelled "tampered" that is identical to a genuine one.
+PORTRAIT_X = 60
+PORTRAIT_Y = 155
+
+INFO_X = 370
+INFO_Y = 165
+LINE_GAP = 62
+VALUE_OFFSET = 230
+VALUE_WIDTH = 280
+VALUE_HEIGHT = 34
+
+FIELD_ROWS = {
+    "name": 0,
+    "date_of_birth": 1,
+    "nationality": 2,
+    "document_number": 3,
+    "date_of_expiry": 4,
+}
+
+
+def field_value_box(field: str) -> tuple[int, int, int, int]:
+    """Pixel box of one field's printed value on a create_document() page."""
+    left = INFO_X + VALUE_OFFSET
+    top = INFO_Y + FIELD_ROWS[field] * LINE_GAP
+
+    return (
+        left,
+        top,
+        left + VALUE_WIDTH,
+        top + VALUE_HEIGHT,
+    )
+
+
 FIRST_NAMES = [
     "JOHN",
     "ALEX",
@@ -49,6 +87,8 @@ def get_font(size: int, bold: bool = False):
             [
                 "C:/Windows/Fonts/arialbd.ttf",
                 "C:/Windows/Fonts/calibrib.ttf",
+                "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
             ]
         )
     else:
@@ -56,6 +96,8 @@ def get_font(size: int, bold: bool = False):
             [
                 "C:/Windows/Fonts/arial.ttf",
                 "C:/Windows/Fonts/calibri.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             ]
         )
 
@@ -233,8 +275,8 @@ def create_document(
 
     portrait = create_portrait(rng)
 
-    portrait_x = 60
-    portrait_y = 155
+    portrait_x = PORTRAIT_X
+    portrait_y = PORTRAIT_Y
 
     image.paste(portrait, (portrait_x, portrait_y))
 
@@ -249,9 +291,9 @@ def create_document(
         width=3,
     )
 
-    info_x = 370
-    info_y = 165
-    line_gap = 62
+    info_x = INFO_X
+    info_y = INFO_Y
+    line_gap = LINE_GAP
 
     fields = [
         ("NAME", name),
@@ -272,7 +314,7 @@ def create_document(
         )
 
         draw.text(
-            (info_x + 230, y),
+            (info_x + VALUE_OFFSET, y),
             value,
             font=body_font,
             fill=(20, 20, 20),
@@ -341,20 +383,41 @@ def save_genuine(
 def create_text_modification(
     image: Image.Image,
     rng: random.Random,
+    box: tuple[int, int, int, int] | None = None,
 ) -> Image.Image:
+    """
+    Rewrite a printed field value, leaving its label and the MRZ untouched.
+
+    The date of birth is the target because it carries its own MRZ check
+    digit, so the altered page contradicts a part of the MRZ that can be
+    trusted. ICAO protects no part of the printed name, so a forged surname
+    is not a sample any MRZ cross-check could act on.
+    """
     modified = image.copy()
+
+    if box is None:
+        box = field_value_box("date_of_birth")
+
+    # Cover the old value in the page's own background colour. A hard-coded
+    # grey leaves a patch on a tinted page, which would let a classifier find
+    # the manipulation by its patch rather than by its content.
+    region = modified.crop(box)
+
+    background = max(
+        region.getcolors(region.width * region.height),
+        key=lambda entry: entry[0],
+    )[1]
+
     draw = ImageDraw.Draw(modified)
 
-    # Deliberately obvious controlled manipulation.
-    draw.rectangle(
-        (600, 225, 880, 270),
-        fill=(235, 235, 230),
-    )
+    draw.rectangle(box, fill=background)
 
     draw.text(
-        (600, 225),
-        f"DATE OF BIRTH: 1990-{rng.randint(1, 12):02d}-15",
-        font=get_font(22),
+        (box[0], box[1]),
+        f"1990-{rng.randint(1, 12):02d}-15",
+        font=get_font(
+            round((box[3] - box[1]) * 0.72)
+        ),
         fill=(20, 20, 20),
     )
 
@@ -377,47 +440,30 @@ def create_portrait_substitution(
     return modified
 
 
-# Copy-move source and destination, held as fractions of the page.
-#
-# A fixed pixel box calibrated for one canvas size silently lands in blank
-# margin when the page is rendered smaller, which produces a "tampered"
-# image identical to its source. Fractions follow the layout instead.
-#
-# Source is the date-of-birth value line; it is pasted over the
-# passport-number value line, duplicating field content within the page.
-COPY_PASTE_SOURCE = (0.036, 0.625, 0.320, 0.681)
-COPY_PASTE_TARGET = (0.036, 0.281)
-
-
 def create_copy_paste(
     image: Image.Image,
+    source_box: tuple[int, int, int, int] | None = None,
+    target_box: tuple[int, int, int, int] | None = None,
 ) -> Image.Image:
     """
     Copy-move forgery: duplicate one field's value over another field.
+
+    Boxes are passed in by callers working on a differently drawn page; the
+    defaults describe the page create_document() produces.
     """
     modified = image.copy()
 
-    width, height = image.size
+    if source_box is None:
+        source_box = field_value_box("date_of_birth")
 
-    left, top, right, bottom = COPY_PASTE_SOURCE
+    if target_box is None:
+        target_box = field_value_box("document_number")
 
-    region = image.crop(
-        (
-            round(left * width),
-            round(top * height),
-            round(right * width),
-            round(bottom * height),
-        )
-    )
-
-    target_x, target_y = COPY_PASTE_TARGET
+    region = image.crop(source_box)
 
     modified.paste(
         region,
-        (
-            round(target_x * width),
-            round(target_y * height),
-        ),
+        (target_box[0], target_box[1]),
     )
 
     return modified
@@ -425,21 +471,25 @@ def create_copy_paste(
 
 def create_region_manipulation(
     image: Image.Image,
+    box: tuple[int, int, int, int] | None = None,
 ) -> Image.Image:
+    """
+    Smudge one printed field, as if it had been chemically lifted.
+
+    The previous box sat at x=820..1080, past the right edge of every value on
+    the page, so this blurred blank paper and saved a document identical to the
+    genuine one under a "tampered" label.
+    """
     modified = image.copy()
 
-    region = modified.crop(
-        (820, 350, 1080, 430)
-    )
+    if box is None:
+        box = field_value_box("name")
 
-    region = region.filter(
+    region = modified.crop(box).filter(
         ImageFilter.GaussianBlur(radius=4)
     )
 
-    modified.paste(
-        region,
-        (820, 350),
-    )
+    modified.paste(region, (box[0], box[1]))
 
     return modified
 

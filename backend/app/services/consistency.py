@@ -39,6 +39,9 @@ DATE_FORMATS = (
     "%d/%m/%Y",
     "%d-%m-%Y",
     "%Y/%m/%d",
+    # Real passports print the month as a word.
+    "%d %b %Y",
+    "%d %B %Y",
 )
 
 
@@ -74,10 +77,20 @@ def _normalize_code(value: str | None) -> str | None:
     return normalized or None
 
 
+# What each field's printed value should look like, for the message shown when
+# it holds something else.
+FIELD_LABELS = {
+    "passport_number": ("Passport number", "document_number"),
+    "date_of_birth": ("Date of birth", "date_of_birth"),
+    "date_of_expiry": ("Date of expiry", "date_of_expiry"),
+}
+
+
 def check_consistency(
     *,
     mrz: dict,
     viz_fields: dict,
+    viz_malformed: dict | None = None,
 ) -> ConsistencyResult:
     """
     Compare the printed values against the MRZ.
@@ -93,6 +106,7 @@ def check_consistency(
     compared = 0
 
     checks = mrz.get("checks", {})
+    viz_malformed = viz_malformed or {}
 
     def compare(label: str, field: str, printed, encoded) -> None:
         nonlocal compared
@@ -132,6 +146,23 @@ def check_consistency(
         _normalize_date(viz_fields.get("date_of_expiry")),
         _normalize_date(mrz.get("date_of_expiry")),
     )
+
+    # A field holding a value shaped like a different field is content moved
+    # across the page. There is nothing to compare it against, but the MRZ
+    # still says what the field should have read.
+    for field, (label, check) in FIELD_LABELS.items():
+
+        printed = viz_malformed.get(field)
+
+        if printed is None or not checks.get(check):
+            continue
+
+        compared += 1
+
+        mismatches.append(
+            f"{label} printed on the page ({printed}) is not a valid "
+            f"{label.lower()}; the MRZ reads {mrz.get(check)}."
+        )
 
     if not compared:
         status = "NOT_RUN"

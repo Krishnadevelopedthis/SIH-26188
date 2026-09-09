@@ -4,7 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>DOCSCREEN — Document Screening Console</title>
+    <script>
+      // Applied before first paint. Reading the stored theme from React
+      // instead would render the light palette for a frame and flash the
+      // whole console white on a night shift.
+      (function () {
+        try {
+          var stored = localStorage.getItem('docscreen-theme');
+          if (stored === 'dark' || stored === 'light') {
+            document.documentElement.dataset.theme = stored;
+          }
+        } catch (e) {
+          // Private browsing can throw on access; the system preference
+          // still applies through prefers-color-scheme.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

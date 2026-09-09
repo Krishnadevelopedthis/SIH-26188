@@ -2,9 +2,10 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ScanLine, ClipboardList, Settings,
-  Shield, ChevronRight, Circle,
+  Shield, ChevronRight, Circle, Sun, Moon,
 } from 'lucide-react';
 import { USE_MOCK } from '../../api/verification';
+import { useTheme } from '../../hooks/useTheme';
 
 const NAV_ITEMS = [
   { to: '/',         label: 'Dashboard', icon: LayoutDashboard },
@@ -15,6 +16,7 @@ const NAV_ITEMS = [
 
 export default function AppShell({ children }) {
   const location = useLocation();
+  const { theme, toggle } = useTheme();
 
   const pageTitle = NAV_ITEMS.find((n) =>
     n.to === '/' ? location.pathname === '/' : location.pathname.startsWith(n.to)
@@ -45,7 +47,7 @@ export default function AppShell({ children }) {
           <div
             style={{
               width: 30, height: 30,
-              borderRadius: 'var(--radius-md)',
+              borderRadius: 'var(--radius-control)',
               background: 'var(--color-accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
@@ -166,6 +168,18 @@ export default function AppShell({ children }) {
           </nav>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={toggle}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+            >
+              {theme === 'dark'
+                ? <Sun size={16} aria-hidden="true" />
+                : <Moon size={16} aria-hidden="true" />}
+            </button>
+
             <div style={{ textAlign: 'right', lineHeight: 1.25 }}>
               <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 Officer K. Sharma
@@ -184,7 +198,7 @@ export default function AppShell({ children }) {
             <div
               style={{
                 width: 34, height: 34,
-                borderRadius: '50%',
+                borderRadius: 'var(--radius-control)',
                 background: 'var(--color-brand)',
                 color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -582,6 +582,7 @@ function ResultView({ result, previewUrl, onReset }) {
           </div>
 
           <div
+            className="doc-preview"
             style={{
               background: 'var(--color-bg-subtle)',
               borderRadius: 'var(--radius-md)',

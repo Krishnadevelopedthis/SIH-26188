@@ -1,0 +1,23 @@
+# Everything here was being uploaded as build context on every deploy: the
+# virtualenv alone is 1.2GB, and none of it is copied into the image.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+.git/
+.github/
+
+# The demo dataset and generated artifacts are not served by the API; it
+# screens whatever is uploaded to it.
+data/
+docs/
+
+.DS_Store
+*.log
+.claude/

@@ -4,14 +4,9 @@ import {
   FileImage,
   X,
   ScanLine,
+  XCircle,
   ZoomIn,
   ZoomOut,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
   RotateCcw,
 } from 'lucide-react';
 
@@ -20,9 +15,13 @@ import {
   Card,
   Button,
   StatusBadge,
-  CheckBadge,
+  CheckRow,
+  Disclosure,
+  RiskGauge,
+  ScanProgress,
   Spinner,
   SectionHeader,
+  statusMeta,
 } from '../components/ui';
 
 export default function Verify({ hook, onResult }) {
@@ -66,13 +65,7 @@ export default function Verify({ hook, onResult }) {
   }
 
   return (
-    <div
-      style={{
-        padding: '32px',
-        maxWidth: 960,
-        margin: '0 auto',
-      }}
-    >
+    <div style={{ maxWidth: 1080 }}>
       <SectionHeader
         title="Document Verification"
         subtitle="Upload a passport image to run AI-assisted forensic screening."
@@ -467,560 +460,225 @@ function PreviewStep({
 
 /* ── Loading state ───────────────────────────────────────────────── */
 
-const STEPS = [
-  {
-    label: 'Reading document data',
-    sub: 'OCR extraction',
-  },
-  {
-    label: 'Validating MRZ zone',
-    sub: 'Check digit verification',
-  },
-  {
-    label: 'Checking document expiry',
-    sub: 'Date validation',
-  },
-  {
-    label: 'Analysing for tampering',
-    sub: 'Pixel-level forensics',
-  },
-  {
-    label: 'Calculating risk',
-    sub: 'Evidence-based risk fusion',
-  },
-];
-
 function LoadingState({ file }) {
-  const [step, setStep] = React.useState(0);
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setStep((current) => {
-        if (current >= STEPS.length - 1) {
-          return current;
-        }
-
-        return current + 1;
-      });
-    }, 1200);
-
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <Card
       style={{
-        padding: '40px 32px',
+        padding: 'var(--space-8) var(--space-6)',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        gap: 28,
+        gap: 'var(--space-6)',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        <Spinner size={36} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <Spinner size={22} />
 
-        <div
-          style={{
-            fontSize: '15px',
-            fontWeight: 600,
-            color: 'var(--color-text-primary)',
-          }}
-        >
-          Verifying document…
-        </div>
-
-        <div
-          style={{
-            fontSize: '12.5px',
-            color: 'var(--color-text-muted)',
-          }}
-        >
-          {file?.name}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>
+            Verifying document…
+          </div>
+          <div
+            className="u-mono"
+            style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-text-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {file?.name}
+          </div>
         </div>
       </div>
 
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 420,
-        }}
-      >
-        {STEPS.map((s, i) => (
-          <div
-            key={s.label}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '8px 0',
-              opacity: i > step + 1 ? 0.3 : 1,
-              transition: 'opacity var(--transition-base)',
-            }}
-          >
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background:
-                  i < step
-                    ? 'var(--color-clear-bg)'
-                    : i === step
-                      ? 'var(--color-brand)'
-                      : 'var(--color-surface-2)',
-                border: `1px solid ${
-                  i < step
-                    ? 'var(--color-clear-border)'
-                    : i === step
-                      ? 'var(--color-brand)'
-                      : 'var(--color-border)'
-                }`,
-              }}
-            >
-              {i < step ? (
-                <CheckCircle
-                  size={12}
-                  style={{
-                    color: 'var(--color-clear)',
-                  }}
-                />
-              ) : i === step ? (
-                <Spinner size={10} color="#fff" />
-              ) : (
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: 'var(--color-border-strong)',
-                    display: 'block',
-                  }}
-                />
-              )}
-            </div>
+      {/* Reading the document is most of the wait, so the stages are
+          named rather than hidden behind a spinner that never moves. */}
+      <ScanProgress />
 
-            <div>
-              <div
-                style={{
-                  fontSize: '12.5px',
-                  fontWeight: i === step ? 600 : 400,
-                  color:
-                    i <= step
-                      ? 'var(--color-text-primary)'
-                      : 'var(--color-text-muted)',
-                }}
-              >
-                {s.label}
-              </div>
-
-              {i === step && (
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
-                  {s.sub}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <div className="skeleton" style={{ height: 12, width: '60%' }} />
+        <div className="skeleton" style={{ height: 12, width: '85%' }} />
+        <div className="skeleton" style={{ height: 12, width: '45%' }} />
       </div>
     </Card>
   );
 }
 
-/* ── Result view ─────────────────────────────────────────────────── */
 
-function ResultView({
-  result,
-  previewUrl,
-  onReset,
-}) {
-  const {
-    status,
-    risk_score,
-    document: doc,
-    checks,
-    reasons,
-  } = result;
+const CHECK_LABELS = {
+  ocr: 'OCR extraction',
+  mrz: 'MRZ validation',
+  expiry: 'Expiry check',
+  tampering: 'Tampering detection',
+  face: 'Face verification',
+  consistency: 'Field consistency',
+};
 
-  const [expanded, setExpanded] = useState(false);
+function ResultView({ result, previewUrl, onReset }) {
+  const { status, risk_score, document: doc, checks, reasons } = result;
 
-  const statusConfig = {
-    CLEAR: {
-      color: 'var(--color-clear)',
-      bg: 'var(--color-clear-bg)',
-      border: 'var(--color-clear-border)',
-      icon: <CheckCircle size={22} />,
-      label: 'Document cleared for entry.',
-    },
+  const meta = statusMeta(status);
+  const Icon = meta.Icon;
 
-    REVIEW: {
-      color: 'var(--color-review)',
-      bg: 'var(--color-review-bg)',
-      border: 'var(--color-review-border)',
-      icon: <AlertTriangle size={22} />,
-      label: 'Manual review required before clearance.',
-    },
+  const entries = Object.entries(checks || {});
 
-    'HIGH-RISK': {
-      color: 'var(--color-risk)',
-      bg: 'var(--color-risk-bg)',
-      border: 'var(--color-risk-border)',
-      icon: <XCircle size={22} />,
-      label: 'Document flagged. Do not clear without supervisor.',
-    },
-
-    // Nothing was screened, so these carry no risk score. They are styled
-    // apart from CLEAR and HIGH-RISK on purpose: an officer must not read
-    // "could not be screened" as either a pass or an accusation.
-    UNREADABLE: {
-      color: 'var(--color-info)',
-      bg: 'var(--color-info-bg)',
-      border: 'var(--color-border-strong)',
-      icon: <HelpCircle size={22} />,
-      label: 'Image could not be read. Rescan the document.',
-      unscreened: true,
-    },
-
-    NOT_A_DOCUMENT: {
-      color: 'var(--color-info)',
-      bg: 'var(--color-info-bg)',
-      border: 'var(--color-border-strong)',
-      icon: <HelpCircle size={22} />,
-      label: 'No travel document found in this image.',
-      unscreened: true,
-    },
-  };
-
-  const cfg =
-    statusConfig[status] || statusConfig.REVIEW;
-
-  const checkLabels = {
-    ocr: 'OCR Extraction',
-    mrz: 'MRZ Validation',
-    expiry: 'Expiry Check',
-    tampering: 'Tampering Detection',
-    face: 'Face Verification',
-    consistency: 'Field Consistency',
-  };
+  const flagged = entries.filter(
+    ([, value]) => value === 'FAIL' || value === 'SUSPICIOUS'
+  ).length;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 20,
-      }}
-    >
-      <div
-        style={{
-          padding: '18px 24px',
-          background: cfg.bg,
-          border: `1px solid ${cfg.border}`,
-          borderRadius: 'var(--radius-lg)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-        }}
-      >
-        <div style={{ color: cfg.color }}>
-          {cfg.icon}
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
-        <div style={{ flex: 1 }}>
+      {/* ── Verdict ──────────────────────────────────────────────────
+          The only thing that has to be legible in the first second.
+          ─────────────────────────────────────────────────────────── */}
+      <div className={`verdict verdict--${meta.tone}`}>
+        <span style={{ color: meta.color, display: 'flex', flexShrink: 0 }}>
+          <Icon size={26} aria-hidden="true" />
+        </span>
+
+        <div className="verdict__body">
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-3)',
+              flexWrap: 'wrap',
               marginBottom: 2,
             }}
           >
-            <StatusBadge
-              status={status}
-              size="lg"
-            />
-
-            <span
-              style={{
-                fontSize: '15px',
-                fontWeight: 600,
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              {cfg.label}
-            </span>
+            <StatusBadge status={status} size="lg" />
+            <span className="verdict__headline">{meta.headline}</span>
           </div>
 
-          <div
-            style={{
-              fontSize: '12.5px',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            {cfg.unscreened ? (
+          <div className="verdict__meta">
+            {meta.unscreened ? (
               'Not screened — no risk score applies.'
             ) : (
               <>
-                Risk score:{' '}
-                <strong style={{ color: cfg.color }}>
-                  {risk_score}/100
+                Risk score{' '}
+                <strong className="u-mono" style={{ color: meta.color }}>
+                  {risk_score}
                 </strong>
+                {' '}of 100
+                {flagged > 0 && (
+                  <> · {flagged} check{flagged > 1 ? 's' : ''} flagged</>
+                )}
               </>
             )}
           </div>
         </div>
 
-        {!cfg.unscreened && <RiskBar score={risk_score} />}
+        {!meta.unscreened && <RiskGauge score={risk_score} status={status} />}
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 20,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-          }}
-        >
-          <Card style={{ padding: 16 }}>
-            <div
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--color-text-muted)',
-                marginBottom: 12,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              Document
-            </div>
+      <div className="grid-2">
 
-            <div
-              style={{
-                background: 'var(--color-bg-subtle)',
-                borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
-                marginBottom: 16,
-                display: 'flex',
-                justifyContent: 'center',
-                padding: 8,
-              }}
-            >
-              <img
-                src={previewUrl}
-                alt="Passport"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: 220,
-                  borderRadius: 'var(--radius-sm)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              />
-            </div>
+        {/* ── Document ─────────────────────────────────────────────── */}
+        <Card style={{ padding: 'var(--space-4)' }}>
+          <div className="u-label" style={{ marginBottom: 'var(--space-3)' }}>
+            Document
+          </div>
 
-            <InfoGrid
-              data={[
-                {
-                  label: 'Passport No.',
-                  value: doc?.passport_number,
-                },
-                {
-                  label: 'Full Name',
-                  value: doc?.name,
-                },
-                {
-                  label: 'Nationality',
-                  value: doc?.nationality,
-                },
-                {
-                  label: 'Date of Birth',
-                  value: formatDate(doc?.date_of_birth),
-                },
-                {
-                  label: 'Date of Expiry',
-                  value: formatDate(doc?.date_of_expiry),
-                },
-                {
-                  label: 'Issued By',
-                  value: doc?.issuing_country,
-                },
-              ]}
+          <div
+            style={{
+              background: 'var(--color-bg-subtle)',
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+              marginBottom: 'var(--space-4)',
+              display: 'flex',
+              justifyContent: 'center',
+              padding: 'var(--space-2)',
+            }}
+          >
+            <img
+              src={previewUrl}
+              alt="Submitted document"
+              style={{
+                maxWidth: '100%',
+                maxHeight: 240,
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
             />
-          </Card>
-        </div>
+          </div>
 
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-          }}
-        >
-          <Card style={{ padding: 20 }}>
-            <div
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--color-text-muted)',
-                marginBottom: 14,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              Verification Checks
+          <InfoGrid
+            data={[
+              { label: 'Passport No.', value: doc?.passport_number, mono: true },
+              { label: 'Full name', value: doc?.name },
+              { label: 'Nationality', value: doc?.nationality, mono: true },
+              { label: 'Date of birth', value: formatDate(doc?.date_of_birth), mono: true },
+              { label: 'Date of expiry', value: formatDate(doc?.date_of_expiry), mono: true },
+              { label: 'Issued by', value: doc?.issuing_country, mono: true },
+            ]}
+          />
+        </Card>
+
+        {/* ── Detail, on request ───────────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+
+          <Disclosure
+            id="checks"
+            title="Verification checks"
+            count={flagged > 0 ? `${flagged} flagged` : entries.length}
+          >
+            <div className="stagger" style={{ borderTop: '1px solid var(--color-border)' }}>
+              {entries.map(([key, value]) => (
+                <CheckRow key={key} name={CHECK_LABELS[key] || key} result={value} />
+              ))}
             </div>
+          </Disclosure>
 
+          {/* Open by default when there is something to act on. */}
+          <Disclosure
+            id="reasons"
+            title={status === 'CLEAR' ? 'Verification notes' : 'Risk factors'}
+            count={reasons?.length || 0}
+            defaultOpen={status !== 'CLEAR' && Boolean(reasons?.length)}
+          >
             <div
+              className="stagger"
               style={{
+                borderTop: '1px solid var(--color-border)',
+                padding: 'var(--space-4)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 10,
+                gap: 'var(--space-3)',
               }}
             >
-              {Object.entries(checks || {}).map(
-                ([key, val]) => (
+              {reasons?.length ? (
+                reasons.map((reason, index) => (
                   <div
-                    key={key}
+                    key={index}
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      gap: 'var(--space-3)',
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--color-text-secondary)',
+                      lineHeight: 1.55,
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: '13px',
-                        color: 'var(--color-text-secondary)',
-                      }}
-                    >
-                      {checkLabels[key] || key}
+                    <span style={{ color: meta.color, flexShrink: 0, display: 'flex', marginTop: 2 }}>
+                      <Icon size={15} aria-hidden="true" />
                     </span>
-
-                    <CheckBadge result={val} />
+                    <span>{reason}</span>
                   </div>
-                )
+                ))
+              ) : (
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+                  No additional verification notes.
+                </div>
               )}
             </div>
-          </Card>
-
-          <Card style={{ padding: 20 }}>
-            <button
-              onClick={() =>
-                setExpanded((e) => !e)
-              }
-              style={{
-                display: 'flex',
-                width: '100%',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: 'var(--color-text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                {status === 'CLEAR'
-                  ? 'Verification Notes'
-                  : 'Risk Factors'}
-              </span>
-
-              {expanded ? (
-                <ChevronUp size={14} />
-              ) : (
-                <ChevronDown size={14} />
-              )}
-            </button>
-
-            {expanded && (
-              <div
-                style={{
-                  marginTop: 12,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-              >
-                {reasons?.length ? (
-                  reasons.map((r, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        gap: 10,
-                        fontSize: '12.5px',
-                        color: 'var(--color-text-secondary)',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      <span
-                        style={{
-                          color:
-                            status === 'CLEAR'
-                              ? 'var(--color-clear)'
-                              : 'var(--color-review)',
-                          flexShrink: 0,
-                          marginTop: 2,
-                        }}
-                      >
-                        {status === 'CLEAR'
-                          ? '✓'
-                          : '⚠'}
-                      </span>
-
-                      <span>{r}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: '12.5px',
-                      color: 'var(--color-text-muted)',
-                    }}
-                  >
-                    No additional verification notes.
-                  </div>
-                )}
-              </div>
-            )}
-          </Card>
+          </Disclosure>
 
           <Button
             variant="secondary"
-            size="md"
             onClick={onReset}
             style={{ width: '100%' }}
-            icon={<RotateCcw size={14} />}
+            icon={<RotateCcw size={15} aria-hidden="true" />}
           >
             Verify another document
           </Button>
@@ -1030,65 +688,6 @@ function ResultView({
   );
 }
 
-/* ── Risk Bar ────────────────────────────────────────────────────── */
-
-function RiskBar({ score }) {
-  const color =
-    score >= 70
-      ? 'var(--color-risk)'
-      : score >= 30
-        ? 'var(--color-review)'
-        : 'var(--color-clear)';
-
-  return (
-    <div
-      style={{
-        textAlign: 'right',
-        minWidth: 80,
-      }}
-    >
-      <div
-        style={{
-          fontSize: '26px',
-          fontWeight: 700,
-          color,
-          lineHeight: 1,
-        }}
-      >
-        {score}
-      </div>
-
-      <div
-        style={{
-          fontSize: '10px',
-          color: 'var(--color-text-muted)',
-          marginBottom: 4,
-        }}
-      >
-        Risk score
-      </div>
-
-      <div
-        style={{
-          width: 80,
-          height: 5,
-          background: 'var(--color-border)',
-          borderRadius: 99,
-        }}
-      >
-        <div
-          style={{
-            width: `${score}%`,
-            height: '100%',
-            background: color,
-            borderRadius: 99,
-            transition: 'width 600ms ease',
-          }}
-        />
-      </div>
-    </div>
-  );
-}
 
 /* ── Info grid ───────────────────────────────────────────────────── */
 
@@ -1098,29 +697,19 @@ function InfoGrid({ data }) {
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: '8px 16px',
+        gap: 'var(--space-3) var(--space-4)',
       }}
     >
-      {data.map(({ label, value }) => (
+      {data.map(({ label, value, mono }) => (
         <div key={label}>
-          <div
-            style={{
-              fontSize: '10.5px',
-              fontWeight: 600,
-              color: 'var(--color-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 2,
-            }}
-          >
-            {label}
-          </div>
+          <div className="u-label" style={{ marginBottom: 2 }}>{label}</div>
 
           <div
+            className={mono ? 'u-mono' : undefined}
             style={{
-              fontSize: '12.5px',
+              fontSize: 'var(--text-sm)',
               fontWeight: 500,
-              color: 'var(--color-text-primary)',
+              color: value ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
             }}
           >
             {value || '—'}

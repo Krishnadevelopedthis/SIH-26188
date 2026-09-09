@@ -4,3 +4,4 @@ uvicorn[standard]
 -r ml/requirements.txt
 -r backend/requirements.txt
 -r ocr/requirements.txt
+

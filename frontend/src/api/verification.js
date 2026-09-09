@@ -116,7 +116,7 @@ function normalizeResponse(raw) {
 // ── API ──────────────────────────────────────────────────────────
 /**
  * Submit a passport image for verification.
- * @param {File} file
+ * @param {File} file 
  * @param {AbortSignal} [signal]
  * @returns {Promise<object>} normalized verification result
  */

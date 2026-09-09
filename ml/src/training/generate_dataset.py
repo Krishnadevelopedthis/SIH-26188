@@ -377,18 +377,47 @@ def create_portrait_substitution(
     return modified
 
 
+# Copy-move source and destination, held as fractions of the page.
+#
+# A fixed pixel box calibrated for one canvas size silently lands in blank
+# margin when the page is rendered smaller, which produces a "tampered"
+# image identical to its source. Fractions follow the layout instead.
+#
+# Source is the date-of-birth value line; it is pasted over the
+# passport-number value line, duplicating field content within the page.
+COPY_PASTE_SOURCE = (0.036, 0.625, 0.320, 0.681)
+COPY_PASTE_TARGET = (0.036, 0.281)
+
+
 def create_copy_paste(
     image: Image.Image,
 ) -> Image.Image:
+    """
+    Copy-move forgery: duplicate one field's value over another field.
+    """
     modified = image.copy()
 
+    width, height = image.size
+
+    left, top, right, bottom = COPY_PASTE_SOURCE
+
     region = image.crop(
-        (370, 165, 700, 215)
+        (
+            round(left * width),
+            round(top * height),
+            round(right * width),
+            round(bottom * height),
+        )
     )
+
+    target_x, target_y = COPY_PASTE_TARGET
 
     modified.paste(
         region,
-        (370, 290),
+        (
+            round(target_x * width),
+            round(target_y * height),
+        ),
     )
 
     return modified
@@ -480,6 +509,13 @@ def generate_dataset(
                 output_dir
                 / f"{document_id}_{tampering_type}.png"
             )
+
+            if tampered.tobytes() == image.tobytes():
+                raise ValueError(
+                    f"Tampering operation '{tampering_type}' left "
+                    f"{document_id} unchanged. The manipulation region "
+                    f"does not overlap any page content."
+                )
 
             tampered.save(output_path)
 

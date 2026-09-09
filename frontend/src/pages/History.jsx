@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ClipboardList, ChevronDown, ChevronUp, X } from 'lucide-react';
-import { Card, StatusBadge, CheckBadge, SectionHeader, Button } from '../components/ui';
+import { Search, ClipboardList, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Card, StatusBadge, CheckBadge, SectionHeader } from '../components/ui';
 
 export default function History({ history }) {
   const [search, setSearch] = useState('');

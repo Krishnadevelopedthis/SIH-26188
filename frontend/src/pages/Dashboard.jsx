@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ScanLine, CheckCircle, AlertTriangle, XCircle, Clock, ArrowRight } from 'lucide-react';
+import {
+  ScanLine, AlertTriangle, XCircle, ArrowRight,
+  ShieldCheck, Fingerprint, FileCheck2, Activity, Sparkles, LockKeyhole,
+} from 'lucide-react';
 import { Card, Button, StatusBadge } from '../components/ui';
 
 export default function Dashboard({ history }) {
@@ -12,206 +15,85 @@ export default function Dashboard({ history }) {
     let mounted = true;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) return;
-
     async function loadVanta() {
       try {
-        // Load THREE then Vanta net effect
-        if (!window.THREE) {
-          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
-        }
+        if (!window.THREE) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
         await loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js');
         if (!mounted || !vantaRef.current || vantaEffect.current) return;
-
         vantaEffect.current = window.VANTA.NET({
-          el: vantaRef.current,
-          THREE: window.THREE,
-          mouseControls: false,
-          touchControls: false,
-          gyroControls: false,
-          minHeight: 200,
-          minWidth: 200,
-          scale: 1.0,
-          scaleMobile: 1.0,
-          color: 0x3a5a9a,
-          backgroundColor: 0x1c2b4a,
-          points: 8,
-          maxDistance: 22,
-          spacing: 18,
-          showDots: false,
+          el: vantaRef.current, THREE: window.THREE, mouseControls: true, touchControls: true,
+          gyroControls: false, minHeight: 240, minWidth: 200, scale: 1, scaleMobile: 1,
+          color: 0x49b9e8, backgroundColor: 0x0b172a, points: 10, maxDistance: 24, spacing: 17, showDots: true,
         });
-      } catch {
-        // Vanta optional — fall back silently
-      }
+      } catch { /* optional visual enhancement */ }
     }
-
     loadVanta();
-    return () => {
-      mounted = false;
-      if (vantaEffect.current) { vantaEffect.current.destroy(); vantaEffect.current = null; }
-    };
+    return () => { mounted = false; if (vantaEffect.current) { vantaEffect.current.destroy(); vantaEffect.current = null; } };
   }, []);
 
-  // Stats from history
   const total = history.length;
   const clear = history.filter(r => r.status === 'CLEAR').length;
   const review = history.filter(r => r.status === 'REVIEW').length;
   const highRisk = history.filter(r => r.status === 'HIGH-RISK').length;
   const avgRisk = total ? Math.round(history.reduce((a, r) => a + r.risk_score, 0) / total) : 0;
+  const clearRate = total ? Math.round((clear / total) * 100) : 0;
 
   return (
-    <div>
-      {/* ── Hero / Header ───────────────────────────────────── */}
-      <div
-        className="dashboard-hero"
-        ref={vantaRef}
-        style={{
-          position: 'relative',
-          minHeight: 200,
-          padding: '48px 40px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          background: 'var(--color-brand)',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,.45)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-            AI Document Screening Console
+    <div className="dashboard-page">
+      <section ref={vantaRef} className="screening-hero">
+        <div className="hero-grid" />
+        <div className="hero-copy fade-in">
+          <div className="eyebrow"><span className="pulse-dot" /> Identity intelligence platform</div>
+          <h1>Screen every document<br /><em>with confidence.</em></h1>
+          <p>AI-assisted passport screening that turns document signals into clear, defensible decisions for officers at the border.</p>
+          <div className="hero-actions">
+            <Button size="lg" onClick={() => navigate('/verify')} icon={<ScanLine size={17} />}>Start a screening</Button>
+            <span className="hero-note"><LockKeyhole size={13} /> Secure officer workspace</span>
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#FFFFFF', marginBottom: 8, lineHeight: 1.2 }}>
-            Passport Verification
-          </h1>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,.55)', maxWidth: 480, lineHeight: 1.6, marginBottom: 24 }}>
-            Secure, AI-assisted identity screening for immigration officers.
-            Submit a passport image for instant forensic analysis.
-          </p>
-          <Button
-            size="md"
-            onClick={() => navigate('/verify')}
-            style={{ background: 'rgba(255,255,255,.12)', borderColor: 'rgba(255,255,255,.25)', color: '#fff' }}
-            icon={<ScanLine size={15} />}
-          >
-            New Verification
-          </Button>
         </div>
-      </div>
+        <div className="hero-orbit" aria-hidden="true"><div className="orbit-ring ring-one" /><div className="orbit-ring ring-two" /><div className="orbit-core"><Fingerprint size={30} /></div></div>
+        <div className="hero-footer"><span>DOCSCREEN / CONTROL ROOM</span><span>MODEL STATUS <strong>OPERATIONAL</strong></span></div>
+      </section>
 
-      {/* ── Content ─────────────────────────────────────────── */}
-      <div className="dashboard-content">
+      <main className="dashboard-content modern-dashboard">
+        <div className="section-intro fade-in"><div><div className="section-kicker">Today at a glance</div><h2>Screening overview</h2></div><div className="live-chip"><Activity size={13} /> Live session</div></div>
 
-        {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
-          <StatCard icon={<ScanLine size={18} />} label="Total Today" value={total} color="var(--color-text-primary)" />
-          <StatCard icon={<CheckCircle size={18} />} label="Clear" value={clear} color="var(--color-clear)" />
-          <StatCard icon={<AlertTriangle size={18} />} label="Review" value={review} color="var(--color-review)" />
-          <StatCard icon={<XCircle size={18} />} label="High Risk" value={highRisk} color="var(--color-risk)" />
-          {total > 0 && <StatCard icon={<Clock size={18} />} label="Avg Risk Score" value={`${avgRisk}`} color="var(--color-text-secondary)" />}
+        <div className="metric-grid">
+          <MetricCard icon={<ScanLine />} label="Screenings" value={total} helper="This officer session" accent="cyan" />
+          <MetricCard icon={<ShieldCheck />} label="Cleared" value={clear} helper={`${clearRate}% clearance rate`} accent="mint" />
+          <MetricCard icon={<AlertTriangle />} label="Needs review" value={review} helper="Manual attention" accent="amber" />
+          <MetricCard icon={<XCircle />} label="High risk" value={highRisk} helper="Escalate immediately" accent="coral" />
         </div>
 
-        {/* Quick action + recent */}
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24 }}>
-
-          {/* Quick action */}
-          <Card className="card-interactive" style={{ padding: 24 }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: 4, color: 'var(--color-text-primary)' }}>Quick Action</div>
-            <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
-              Upload a passport to begin a new verification screening.
-            </p>
-            <Button size="md" onClick={() => navigate('/verify')} style={{ width: '100%' }} icon={<ScanLine size={14} />}>
-              Start Verification
-            </Button>
+        <div className="dashboard-panels">
+          <Card className="activity-panel card-interactive">
+            <div className="panel-heading"><div><div className="section-kicker">Signal monitor</div><h3>Risk distribution</h3></div><span className="panel-badge"><Activity size={12} /> Live</span></div>
+            <div className="risk-visual"><div className="donut" style={{ '--progress': `${Math.max(clearRate, 4)}%` }}><div><strong>{avgRisk}</strong><span>avg risk</span></div></div><div className="legend"><Legend color="mint" label="Clear" value={clear} /><Legend color="amber" label="Review" value={review} /><Legend color="coral" label="High risk" value={highRisk} /></div></div>
+            <div className="signal-line"><span>Session confidence</span><strong>{total ? `${Math.max(92 - avgRisk, 58)}%` : '—'}</strong></div>
           </Card>
 
-          {/* Recent verifications */}
-          <Card className="card-interactive">
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Recent Verifications</span>
-              {history.length > 0 && (
-                <button
-                  onClick={() => navigate('/history')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'var(--color-brand-mid)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
-                >
-                  View all <ArrowRight size={12} />
-                </button>
-              )}
+          <Card className="workflow-panel card-interactive">
+            <div className="panel-heading"><div><div className="section-kicker">Operator workflow</div><h3>Make your next decision</h3></div><Sparkles size={19} className="sparkle" /></div>
+            <div className="workflow-list">
+              <WorkflowStep number="01" icon={<FileCheck2 />} title="Upload a passport" text="Capture or select a document image." onClick={() => navigate('/verify')} />
+              <WorkflowStep number="02" icon={<Fingerprint />} title="Run identity checks" text="Read OCR, MRZ, face and tamper signals." onClick={() => navigate('/verify')} />
+              <WorkflowStep number="03" icon={<ShieldCheck />} title="Review the evidence" text="Get an explainable risk recommendation." onClick={() => navigate('/history')} />
             </div>
-            {history.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                <ScanLine size={28} style={{ marginBottom: 10, opacity: 0.35 }} />
-                <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: 4 }}>No verifications yet</div>
-                <div style={{ fontSize: '12px' }}>Completed screenings will appear here.</div>
-              </div>
-            ) : (
-              <div>
-                {history.slice(0, 5).map((r) => (
-                  <div
-                    key={r.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '12px 20px', borderBottom: '1px solid var(--color-border)',
-                      cursor: 'pointer', transition: 'background var(--transition-fast)',
-                    }}
-                    onClick={() => navigate('/history')}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-subtle)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {r.document?.name || r.filename}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: 1 }}>
-                        {r.document?.passport_number || '—'} · {formatTime(r.timestamp)}
-                      </div>
-                    </div>
-                    <StatusBadge status={r.status} />
-                    <RiskPill score={r.risk_score} />
-                  </div>
-                ))}
-              </div>
-            )}
           </Card>
         </div>
-      </div>
+
+        <Card className="recent-panel card-interactive">
+          <div className="panel-heading recent-heading"><div><div className="section-kicker">Audit trail</div><h3>Recent screenings</h3></div>{history.length > 0 && <button className="text-action" onClick={() => navigate('/history')}>View all <ArrowRight size={14} /></button>}</div>
+          {history.length === 0 ? <div className="empty-dashboard"><div className="empty-icon"><ScanLine size={25} /></div><h4>Your screening queue is clear</h4><p>Start a new passport screening and completed decisions will appear here.</p><Button size="sm" onClick={() => navigate('/verify')} icon={<ScanLine size={13} />}>New screening</Button></div> : <div className="recent-list">{history.slice(0, 5).map(r => <div className="recent-row" key={r.id} onClick={() => navigate('/history')}><div className="record-icon"><FileCheck2 size={15} /></div><div className="record-main"><strong>{r.document?.name || r.filename}</strong><span>{r.document?.passport_number || 'No passport number'} · {formatTime(r.timestamp)}</span></div><StatusBadge status={r.status} /><RiskPill score={r.risk_score} /><ArrowRight className="row-arrow" size={15} /></div>)}</div>}
+        </Card>
+      </main>
     </div>
   );
 }
 
-function StatCard({ icon, label, value, color }) {
-  return (
-    <Card style={{ padding: '18px 20px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-      <div style={{ color, marginTop: 2, opacity: 0.8 }}>{icon}</div>
-      <div>
-        <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.1 }}>{value}</div>
-        <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: 3 }}>{label}</div>
-      </div>
-    </Card>
-  );
-}
-
-function RiskPill({ score }) {
-  const color = score >= 75 ? 'var(--color-risk)' : score >= 40 ? 'var(--color-review)' : 'var(--color-clear)';
-  return (
-    <span style={{
-      fontSize: '11px', fontWeight: 700, color,
-      background: 'var(--color-surface-2)', borderRadius: 'var(--radius-sm)',
-      padding: '2px 6px', border: '1px solid var(--color-border)',
-    }}>
-      {score}
-    </span>
-  );
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-async function loadScript(src) {
-  return new Promise((res, rej) => {
-    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
-    const s = document.createElement('script');
-    s.src = src; s.async = true;
-    s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
-}
+function MetricCard({ icon, label, value, helper, accent }) { return <Card className={`metric-card metric-${accent} card-interactive`}><div className="metric-icon">{icon}</div><div className="metric-copy"><span>{label}</span><strong>{value}</strong><small>{helper}</small></div><div className="metric-spark"><i /><i /><i /><i /><i /></div></Card>; }
+function Legend({ color, label, value }) { return <div className="legend-row"><span className={`legend-dot ${color}`} /><span>{label}</span><strong>{value}</strong></div>; }
+function WorkflowStep({ number, icon, title, text, onClick }) { return <button className="workflow-step" onClick={onClick}><span className="step-number">{number}</span><span className="step-icon">{icon}</span><span className="step-copy"><strong>{title}</strong><small>{text}</small></span><ArrowRight size={15} /></button>; }
+function RiskPill({ score }) { const color = score >= 75 ? 'var(--color-risk)' : score >= 40 ? 'var(--color-review)' : 'var(--color-clear)'; return <span className="risk-pill" style={{ color }}>{score}<small>/100</small></span>; }
+function formatTime(date) { return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+async function loadScript(src) { return new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`)) { res(); return; } const s = document.createElement('script'); s.src = src; s.async = true; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }

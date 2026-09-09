@@ -14,6 +14,7 @@ def calculate_risk(
     expiry_status: str,
     tampering_score: float,
     tampering_status: str,
+    consistency_status: str = "NOT_RUN",
 ) -> RiskResult:
     """
     Combine deterministic document checks and ML forensic signals
@@ -43,6 +44,19 @@ def calculate_risk(
         score += 25
         reasons.append(
             "Passport expiry validation failed."
+        )
+
+    # ---------------------------------------------------------
+    # Printed fields against the MRZ
+    #
+    # Weighted like an MRZ failure: both say the document does not agree with
+    # itself, and both are deterministic rather than probabilistic.
+    # ---------------------------------------------------------
+
+    if consistency_status == "FAIL":
+        score += 35
+        reasons.append(
+            "Printed fields do not match the machine-readable zone."
         )
 
     # ---------------------------------------------------------

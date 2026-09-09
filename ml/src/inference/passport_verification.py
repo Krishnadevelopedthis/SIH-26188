@@ -195,6 +195,78 @@ def _extract_ocr_name(texts: list[str]) -> str | None:
     return value
 
 
+# Labels printed in the visual inspection zone, and the field each one
+# introduces. These pages set the label above its value, so OCR returns them as
+# consecutive lines rather than one "LABEL: VALUE" string.
+VIZ_LABELS = {
+    "PASSPORTNO": "passport_number",
+    "PASSPORTNUMBER": "passport_number",
+    "DOCUMENTNO": "passport_number",
+    "DOCUMENTNUMBER": "passport_number",
+    "SURNAME": "surname",
+    "GIVENNAMES": "given_names",
+    "GIVENNAME": "given_names",
+    "NATIONALITY": "nationality",
+    "DATEOFBIRTH": "date_of_birth",
+    "DATEOFEXPIRY": "date_of_expiry",
+    "DATEOFEXPIRATION": "date_of_expiry",
+    "SEX": "sex",
+}
+
+
+def _label_key(text: str) -> str:
+    """Reduce an OCR line to letters only, so 'PASSPORT NO.' -> 'PASSPORTNO'."""
+    return "".join(
+        character
+        for character in text.upper()
+        if character.isalpha()
+    )
+
+
+def _extract_viz_fields(
+    texts: list[str],
+    mrz_lines: list[str],
+) -> dict:
+    """
+    Read the values printed in the visual inspection zone.
+
+    Only values introduced by a recognised label are returned. Nothing falls
+    back to scanning the page, because the fallback in _extract_ocr_fields
+    happily recovers a document number from the MRZ itself - which would make
+    the printed field agree with the MRZ by construction and defeat the whole
+    point of comparing them.
+    """
+    mrz_set = set(mrz_lines)
+
+    fields: dict[str, str] = {}
+
+    for index, text in enumerate(texts):
+
+        field = VIZ_LABELS.get(_label_key(text))
+
+        if field is None or field in fields:
+            continue
+
+        if index + 1 >= len(texts):
+            continue
+
+        value = _clean_text(texts[index + 1])
+
+        # The next line must be a value, not another label or the MRZ.
+        if not value:
+            continue
+
+        if value.replace(" ", "") in mrz_set:
+            continue
+
+        if _label_key(value) in VIZ_LABELS:
+            continue
+
+        fields[field] = value
+
+    return fields
+
+
 def _extract_ocr_fields(texts: list[str]) -> dict:
     """
     Extract visible identity fields from OCR.
@@ -261,6 +333,8 @@ def verify_passport_identity(image_path: str) -> dict:
     # ---------------------------------------------------------
     ocr_fields = _extract_ocr_fields(texts)
 
+    viz_fields = _extract_viz_fields(texts, mrz_lines)
+
     # ---------------------------------------------------------
     # MRZ unavailable
     # ---------------------------------------------------------
@@ -300,6 +374,8 @@ def verify_passport_identity(image_path: str) -> dict:
                     "Could not extract two MRZ lines."
                 ],
             },
+
+            "viz_fields": viz_fields,
         }
 
     # ---------------------------------------------------------
@@ -382,4 +458,7 @@ def verify_passport_identity(image_path: str) -> dict:
         # Keep OCR fallback information available for debugging
         # and future frontend use.
         "ocr_fields": ocr_fields,
+
+        # Values as printed on the page, for cross-checking against the MRZ.
+        "viz_fields": viz_fields,
     }

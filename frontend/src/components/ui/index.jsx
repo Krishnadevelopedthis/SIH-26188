@@ -191,16 +191,8 @@ export function Spinner({ size = 20, color = 'var(--color-accent)' }) {
 /* ── SectionHeader ───────────────────────────────────────────────── */
 export function SectionHeader({ title, subtitle, action }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: 'var(--space-4)',
-        marginBottom: 'var(--space-5)',
-      }}
-    >
-      <div>
+    <div className="section-header">
+      <div className="section-header__text">
         <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, marginBottom: subtitle ? 2 : 0 }}>
           {title}
         </h2>
@@ -210,7 +202,7 @@ export function SectionHeader({ title, subtitle, action }) {
           </p>
         )}
       </div>
-      {action}
+      {action && <div className="section-header__action">{action}</div>}
     </div>
   );
 }

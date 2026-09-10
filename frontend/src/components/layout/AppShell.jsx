@@ -134,40 +134,19 @@ export default function AppShell({ children }) {
       {/* ── Main column ─────────────────────────────────────────────── */}
       <div className="main">
 
-        <header
-          style={{
-            minHeight: 'var(--topbar-height)',
-            background: 'var(--color-surface)',
-            borderBottom: '1px solid var(--color-border)',
-            padding: 'var(--space-2) var(--space-6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 'var(--space-4)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-            flexShrink: 0,
-          }}
-        >
-          <nav
-            aria-label="Breadcrumb"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-              fontSize: 'var(--text-sm)',
-              minWidth: 0,
-            }}
-          >
-            <span style={{ color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-              Immigration Console
-            </span>
-            <ChevronRight size={14} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} aria-hidden="true" />
-            <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{pageTitle}</span>
+        <header className="topbar">
+          <nav aria-label="Breadcrumb" className="topbar__crumb">
+            <span className="topbar__crumb-prefix">Immigration Console</span>
+            <ChevronRight
+              size={14}
+              className="topbar__crumb-sep"
+              style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}
+              aria-hidden="true"
+            />
+            <span className="topbar__crumb-page">{pageTitle}</span>
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+          <div className="topbar__right">
             <button
               type="button"
               className="theme-toggle"
@@ -180,37 +159,12 @@ export default function AppShell({ children }) {
                 : <Moon size={16} aria-hidden="true" />}
             </button>
 
-            <div style={{ textAlign: 'right', lineHeight: 1.25 }}>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                Officer K. Sharma
-              </div>
-              <div
-                style={{
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--color-text-muted)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Gate 7 — Terminal 2
-              </div>
+            <div className="topbar__officer">
+              <div className="topbar__officer-name">Officer K. Sharma</div>
+              <div className="topbar__officer-post">Gate 7 — Terminal 2</div>
             </div>
 
-            <div
-              style={{
-                width: 34, height: 34,
-                borderRadius: 'var(--radius-control)',
-                background: 'var(--color-brand)',
-                color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                flexShrink: 0,
-              }}
-              aria-hidden="true"
-            >
-              KS
-            </div>
+            <div className="topbar__avatar" aria-hidden="true">KS</div>
           </div>
         </header>
 

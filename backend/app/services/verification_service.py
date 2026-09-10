@@ -1,5 +1,7 @@
 from pathlib import Path
 from time import perf_counter
+import os
+import resource
 
 from backend.app.schemas.verification import (
     DocumentInfo,
@@ -16,11 +18,23 @@ from ml.src.inference.pipeline import analyze_passport
 from ml.src.inference.passport_verification import verify_passport_identity
 
 
+
+def log_memory(stage: str):
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+
+    print(
+        f"[MEMORY] {stage} | "
+        f"RSS={usage.ru_maxrss / 1024:.2f} MB | "
+        f"PID={os.getpid()}"
+    )
+
+
 def verify_document(image_path: str) -> VerificationResponse:
     total_start = perf_counter()
 
-        print("[VERIFY] Starting document verification")
+    print("[VERIFY] Starting document verification")
     print(f"[VERIFY] File: {image_path}")
+    log_memory("verification-start")
 
     path = Path(image_path)
 
@@ -41,6 +55,7 @@ def verify_document(image_path: str) -> VerificationResponse:
     )
 
     ocr_mrz_time = perf_counter() - start
+    log_memory("after-ocr-mrz")
 
     ocr_result = passport_result["ocr"]
     mrz_result = passport_result["mrz"]
@@ -63,10 +78,16 @@ def verify_document(image_path: str) -> VerificationResponse:
     # assumptions produces a confident accusation about a document nobody
     # submitted, so stop here instead.
     # ---------------------------------------------------------
+    print("[VERIFY] Starting document detection...")
     detection = detect_document(
         texts=ocr_result["texts"],
         mrz_lines=passport_result.get("mrz_lines", []),
         viz_fields=viz_fields,
+    )
+    print(
+    f"[VERIFY] Document detection: "
+    f"is_document={detection.is_document}, "
+    f"status={detection.status}"
     )
 
     if not detection.is_document:
@@ -122,6 +143,12 @@ def verify_document(image_path: str) -> VerificationResponse:
     )
 
     ml_time = perf_counter() - start
+    log_memory("after-ocr-mrz")
+    
+    print(
+    f"[VERIFY] Forensic ML completed in {ml_time:.2f}s"
+    )
+    
 
     tampering = ml_result.tampering
 

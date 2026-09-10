@@ -20,7 +20,17 @@ class PassportOCR:
     def __init__(self):
         self.ocr = get_ocr()
 
-    def extract_text(self, image_path: str) -> list[str]:
+    def extract_text(
+        self,
+        image_path: str,
+    ) -> tuple[list[str], list[float]]:
+        """
+        Return the recognised lines and the confidence of each.
+
+        Confidence is kept rather than discarded because a field read badly is
+        missing evidence, not evidence of a discrepancy - a distinction the
+        MRZ cross-check depends on.
+        """
         path = Path(image_path)
 
         if not path.exists():
@@ -31,17 +41,27 @@ class PassportOCR:
         result = self.ocr.predict(str(path))
 
         texts = []
+        scores = []
 
         for page in result:
             rec_texts = page.get("rec_texts", [])
+            rec_scores = page.get("rec_scores", [])
 
-            for text in rec_texts:
+            for index, text in enumerate(rec_texts):
                 cleaned = str(text).strip()
 
-                if cleaned:
-                    texts.append(cleaned)
+                if not cleaned:
+                    continue
 
-        return texts
+                texts.append(cleaned)
+
+                scores.append(
+                    float(rec_scores[index])
+                    if index < len(rec_scores)
+                    else 0.0
+                )
+
+        return texts, scores
 
     def extract_mrz(self, texts: list[str]) -> list[str]:
         mrz_lines = []
@@ -58,10 +78,11 @@ class PassportOCR:
 def extract_passport_ocr(image_path: str) -> dict:
     ocr = PassportOCR()
 
-    texts = ocr.extract_text(image_path)
+    texts, scores = ocr.extract_text(image_path)
     mrz_lines = ocr.extract_mrz(texts)
 
     return {
         "texts": texts,
+        "scores": scores,
         "mrz_lines": mrz_lines,
     }

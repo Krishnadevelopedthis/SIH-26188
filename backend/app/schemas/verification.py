@@ -37,7 +37,12 @@ class VerificationChecks(BaseModel):
 
 class VerificationResponse(BaseModel):
     status: str = Field(
-        description="Overall screening decision: CLEAR, REVIEW, or HIGH-RISK"
+        description=(
+            "Screening decision: CLEAR, REVIEW or HIGH-RISK for a travel "
+            "document; UNREADABLE or NOT_A_DOCUMENT when the upload could "
+            "not be screened, in which case risk_score carries no meaning "
+            "and is reported as 0."
+        )
     )
 
     risk_score: int = Field(

@@ -1,10 +1,10 @@
 // ── Verification API Service ────────────────────────────────────
 // Toggle mock mode here. When backend is ready, set USE_MOCK = false.
 const USE_MOCK = false;
-const VITE_API_BASE = import.meta.env.VITE_API_BASE ;
+const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/+$/, '');
 
 if (!API_BASE) {
-  throw new Error('VITE_API_BASE is not configured');
+  throw new Error('VITE_API_URL is not configured');
 }
 
 // ── Mock responses ───────────────────────────────────────────────
@@ -116,7 +116,7 @@ function normalizeResponse(raw) {
 // ── API ──────────────────────────────────────────────────────────
 /**
  * Submit a passport image for verification.
- * @param {File} file
+ * @param {File} file 
  * @param {AbortSignal} [signal]
  * @returns {Promise<object>} normalized verification result
  */

@@ -2,7 +2,13 @@ FROM python:3.12.10-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+# libgomp1 provides libgomp.so.1, the GNU OpenMP runtime. PaddlePaddle and
+# scikit-learn both link against it and load it lazily, so the container
+# starts and /health answers while every call to /verify fails with
+# "libgomp.so.1: cannot open shared object file". The slim base image does
+# not carry it; libgl1 and libglib2.0-0 are for OpenCV.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*

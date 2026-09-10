@@ -15,3 +15,5 @@ __pycache__/
 # Demo dataset
 /data/demo_dataset/
 /data/demo_dataset.zip
+# Local audit notes — not for the shared repository
+docs/*.pdf

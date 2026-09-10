@@ -5,6 +5,12 @@ Pillow
 numpy
 scikit-learn
 opencv-python-headless
-paddleocr
-paddlepaddle
+# paddlepaddle is pinned deliberately. 3.3.1 fails every inference with
+# "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support" from its
+# oneDNN executor, so /verify returns 500 while /health stays green. Nothing
+# in this repository changed to cause that - the requirement was unpinned, so
+# a deploy simply picked up whichever release was newest that day.
+# 3.0.0 is verified working with paddleocr 3.7.0 in the container image.
+paddleocr == 3.7.0
+paddlepaddle == 3.0.0
 PyYAML

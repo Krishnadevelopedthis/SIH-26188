@@ -20,6 +20,7 @@ export default function Dashboard({ history }) {
         if (!window.THREE) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
         await loadScript('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js');
         if (!mounted || !vantaRef.current || vantaEffect.current) return;
+        if (!window.THREE || !window.VANTA?.NET) return;
         vantaEffect.current = window.VANTA.NET({
           el: vantaRef.current, THREE: window.THREE, mouseControls: true, touchControls: true,
           gyroControls: false, minHeight: 240, minWidth: 200, scale: 1, scaleMobile: 1,
@@ -96,4 +97,26 @@ function Legend({ color, label, value }) { return <div className="legend-row"><s
 function WorkflowStep({ number, icon, title, text, onClick }) { return <button className="workflow-step" onClick={onClick}><span className="step-number">{number}</span><span className="step-icon">{icon}</span><span className="step-copy"><strong>{title}</strong><small>{text}</small></span><ArrowRight size={15} /></button>; }
 function RiskPill({ score }) { const color = score >= 75 ? 'var(--color-risk)' : score >= 40 ? 'var(--color-review)' : 'var(--color-clear)'; return <span className="risk-pill" style={{ color }}>{score}<small>/100</small></span>; }
 function formatTime(date) { return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
-async function loadScript(src) { return new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`)) { res(); return; } const s = document.createElement('script'); s.src = src; s.async = true; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+// One promise per URL, shared by every caller.
+//
+// The previous version resolved as soon as a <script> tag with this src was
+// in the document - but a tag that is present may still be downloading. With
+// StrictMode invoking the effect twice, the second run saw the tag the first
+// had just appended, resolved immediately, and called VANTA.NET while
+// window.THREE was still undefined, which threw on THREE.Group.
+const scriptLoads = new Map();
+
+function loadScript(src) {
+  if (!scriptLoads.has(src)) {
+    scriptLoads.set(src, new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.async = true;
+      el.onload = resolve;
+      el.onerror = () => reject(new Error(`failed to load ${src}`));
+      document.head.appendChild(el);
+    }));
+  }
+
+  return scriptLoads.get(src);
+}

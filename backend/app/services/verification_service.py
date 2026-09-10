@@ -8,6 +8,8 @@ from backend.app.schemas.verification import (
     VerificationChecks,
     VerificationResponse,
 )
+from backend.app.services.consistency import check_consistency
+from backend.app.services.document_detector import detect_document
 from backend.app.services.expiry_validator import validate_expiry
 from backend.app.services.risk_engine import calculate_risk
 from ml.src.inference.pipeline import analyze_passport
@@ -44,6 +46,42 @@ def verify_document(image_path: str) -> VerificationResponse:
         {},
     )
 
+    viz_fields = passport_result.get(
+        "viz_fields",
+        {},
+    )
+
+    # ---------------------------------------------------------
+    # Is this a travel document at all?
+    #
+    # Everything below assumes it is. Scoring a holiday photo against those
+    # assumptions produces a confident accusation about a document nobody
+    # submitted, so stop here instead.
+    # ---------------------------------------------------------
+    detection = detect_document(
+        texts=ocr_result["texts"],
+        mrz_lines=passport_result.get("mrz_lines", []),
+        viz_fields=viz_fields,
+    )
+
+    if not detection.is_document:
+        print(
+            f"[TIMING] "
+            f"OCR+MRZ={ocr_mrz_time:.2f}s | "
+            f"screening skipped ({detection.status})"
+        )
+
+        return VerificationResponse(
+            status=detection.status,
+            risk_score=0,
+            document=DocumentInfo(),
+            checks=VerificationChecks(
+                ocr=ocr_result["status"],
+            ),
+            mrz=MRZInfo(),
+            reasons=[detection.reason],
+        )
+
     # ---------------------------------------------------------
     # Expiry validation
     # ---------------------------------------------------------
@@ -54,6 +92,19 @@ def verify_document(image_path: str) -> VerificationResponse:
     )
 
     expiry_time = perf_counter() - start
+
+    # ---------------------------------------------------------
+    # Printed fields against the MRZ
+    # ---------------------------------------------------------
+    start = perf_counter()
+
+    consistency = check_consistency(
+        mrz=mrz_result,
+        viz_fields=viz_fields,
+        viz_malformed=passport_result.get("viz_malformed", {}),
+    )
+
+    consistency_time = perf_counter() - start
 
     # ---------------------------------------------------------
     # Forensic ML
@@ -81,6 +132,7 @@ def verify_document(image_path: str) -> VerificationResponse:
         expiry_status=expiry_status,
         tampering_score=tampering.score,
         tampering_status=tampering.status,
+        consistency_status=consistency.status,
     )
 
     risk_time = perf_counter() - start
@@ -97,13 +149,10 @@ def verify_document(image_path: str) -> VerificationResponse:
             "OCR failed to extract readable passport text."
         )
 
-    if mrz_result["status"] == "FAIL":
-        reasons.append(
-            "MRZ validation failed."
-        )
-
     if expiry_reason:
         reasons.append(expiry_reason)
+
+    reasons.extend(consistency.mismatches)
 
     # ---------------------------------------------------------
     # Verification checks
@@ -114,7 +163,7 @@ def verify_document(image_path: str) -> VerificationResponse:
         expiry=expiry_status,
         tampering=tampering.status,
         face="NOT_RUN",
-        consistency="NOT_RUN",
+        consistency=consistency.status,
     )
 
     # ---------------------------------------------------------
@@ -126,6 +175,7 @@ def verify_document(image_path: str) -> VerificationResponse:
         f"[TIMING] "
         f"OCR+MRZ={ocr_mrz_time:.2f}s | "
         f"Expiry={expiry_time:.4f}s | "
+        f"Consistency={consistency_time:.4f}s | "
         f"ML={ml_time:.2f}s | "
         f"Risk={risk_time:.4f}s | "
         f"TOTAL={total_time:.2f}s"

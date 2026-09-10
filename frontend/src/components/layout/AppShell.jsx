@@ -25,7 +25,7 @@ export default function AppShell({ children }) {
 
       {/* ── Sidebar (sticky, not fixed, on desktop) ─── */}
       <button
-        className="sidebar-backdrop"
+        className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`}
         aria-label="Close navigation"
         onClick={() => setSidebarOpen(false)}
         style={{ display: 'none', position: 'fixed', inset: 0, zIndex: 250, border: 0, background: 'rgba(9, 21, 38, .45)', backdropFilter: 'blur(2px)' }}

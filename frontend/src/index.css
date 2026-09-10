@@ -79,6 +79,24 @@ h1, h2, h3 { font-family: 'Space Grotesk', 'DM Sans', sans-serif; letter-spacing
   .dashboard-content { padding: 26px 20px; }
   .dashboard-hero { padding: 38px 28px !important; }
   .dashboard-grid { grid-template-columns: 1fr !important; }
+
+  /* Touch targets.
+     Below this width the console is being used with a finger, and every
+     control was under the 44px minimum: navigation links at 39, the menu
+     button at 35, filter chips at 30. These are matched by element rather
+     than class because most carry inline styles and have no class to hook,
+     and min-height is used because it is the one box property none of them
+     set inline. Buttons and inputs centre their own content, so the labels
+     stay centred as the box grows. */
+  .app-sidebar nav a,
+  .mobile-menu-button,
+  main button,
+  main a[href],
+  main input:not([type="file"]),
+  main select,
+  main textarea { min-height: 44px; }
+
+  .mobile-menu-button { align-items: center; justify-content: center; }
 }
 
 @media (max-width: 640px) {

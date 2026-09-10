@@ -143,7 +143,7 @@ def verify_document(image_path: str) -> VerificationResponse:
     )
 
     ml_time = perf_counter() - start
-    log_memory("after-ocr-mrz")
+    log_memory("after-forensic-ml")
     
     print(
     f"[VERIFY] Forensic ML completed in {ml_time:.2f}s"

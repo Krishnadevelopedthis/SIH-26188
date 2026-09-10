@@ -1,262 +1,170 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ClipboardList, ChevronDown, X } from 'lucide-react';
-import {
-  Card, StatusBadge, CheckBadge, SectionHeader, statusMeta,
-} from '../components/ui';
-
-const STATUS_OPTS = ['ALL', 'CLEAR', 'REVIEW', 'HIGH-RISK'];
+import { Search, Filter, ClipboardList, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Card, StatusBadge, CheckBadge, SectionHeader, Button } from '../components/ui';
 
 export default function History({ history }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [expanded, setExpanded] = useState(null);
 
-  const filtered = useMemo(() => (
-    history.filter((r) => {
-      const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
-      const q = search.trim().toLowerCase();
+  const STATUS_OPTS = ['ALL', 'CLEAR', 'REVIEW', 'HIGH-RISK'];
 
+  const filtered = useMemo(() => {
+    return history.filter(r => {
+      const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
+      const q = search.toLowerCase();
       const matchSearch = !q
         || r.document?.name?.toLowerCase().includes(q)
         || r.document?.passport_number?.toLowerCase().includes(q)
         || r.document?.nationality?.toLowerCase().includes(q);
-
       return matchStatus && matchSearch;
-    })
-  ), [history, search, statusFilter]);
+    });
+  }, [history, search, statusFilter]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+    <div style={{ padding: 32 }}>
       <SectionHeader
-        title="Verification history"
-        subtitle={`${history.length} record${history.length === 1 ? '' : 's'} this session.`}
+        title="Verification History"
+        subtitle={`${history.length} total record${history.length !== 1 ? 's' : ''} this session.`}
       />
 
-      <Card>
-        <div
-          style={{
-            padding: 'var(--space-3) var(--space-4)',
-            display: 'flex',
-            gap: 'var(--space-3)',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-            <Search
-              size={15}
-              aria-hidden="true"
+      {/* Filters */}
+      <Card style={{ padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
+          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or passport number…"
+            style={searchInputStyle}
+            aria-label="Search records"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 2 }}
+              aria-label="Clear search"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {STATUS_OPTS.map(opt => (
+            <button
+              key={opt}
+              onClick={() => setStatusFilter(opt)}
               style={{
-                position: 'absolute',
-                left: 11,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--color-text-muted)',
-                pointerEvents: 'none',
+                padding: '5px 10px',
+                fontSize: '11.5px',
+                fontWeight: statusFilter === opt ? 600 : 400,
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid',
+                borderColor: statusFilter === opt ? 'var(--color-brand)' : 'var(--color-border)',
+                background: statusFilter === opt ? 'var(--color-brand)' : 'transparent',
+                color: statusFilter === opt ? '#fff' : 'var(--color-text-secondary)',
+                cursor: 'pointer',
+                transition: 'all var(--transition-fast)',
               }}
-            />
-
-            <input
-              className="input"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, passport number or nationality…"
-              aria-label="Search records"
-            />
-
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                aria-label="Clear search"
-                style={{
-                  position: 'absolute',
-                  right: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 0,
-                  cursor: 'pointer',
-                  color: 'var(--color-text-muted)',
-                  display: 'flex',
-                  padding: 4,
-                }}
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          <div
-            role="group"
-            aria-label="Filter by status"
-            style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}
-          >
-            {STATUS_OPTS.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                aria-pressed={statusFilter === opt}
-                className={`chip${statusFilter === opt ? ' chip--on' : ''}`}
-                onClick={() => setStatusFilter(opt)}
-              >
-                {opt === 'ALL' ? 'All' : statusMeta(opt).label}
-              </button>
-            ))}
-          </div>
+            >
+              {opt}
+            </button>
+          ))}
         </div>
       </Card>
 
+      {/* Table */}
       <Card style={{ overflow: 'hidden' }}>
         {filtered.length === 0 ? (
           <EmptyState hasHistory={history.length > 0} />
         ) : (
-          /* The table keeps control-room column widths and scrolls inside
-             its own container, so a kiosk never scrolls the page sideways. */
-          <div className="scroll-x">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Passport no.</th>
-                  <th>Passenger</th>
-                  <th>Nat.</th>
-                  <th className="num">Risk</th>
-                  <th>Status</th>
-                  <th><span className="sr-only">Detail</span></th>
-                </tr>
-              </thead>
+          <div>
+            {/* Header */}
+            <div style={rowStyle(false, true)}>
+              <Cell w={90} label="Time" header />
+              <Cell w={120} label="Passport No." header />
+              <Cell flex label="Passenger" header />
+              <Cell w={100} label="Nationality" header />
+              <Cell w={70} label="Risk" header />
+              <Cell w={110} label="Status" header />
+              <Cell w={60} label="" header />
+            </div>
 
-              <tbody>
-                {filtered.map((r) => {
-                  const open = expanded === r.id;
-                  const meta = statusMeta(r.status);
+            {/* Rows */}
+            {filtered.map(r => (
+              <React.Fragment key={r.id}>
+                <div
+                  style={rowStyle(true)}
+                  onClick={() => setExpanded(expanded === r.id ? null : r.id)}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-subtle)'}
+                  onMouseLeave={e => e.currentTarget.style.background = expanded === r.id ? 'var(--color-info-bg)' : 'transparent'}
+                >
+                  <Cell w={90}>{formatTime(r.timestamp)}</Cell>
+                  <Cell w={120}><code style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{r.document?.passport_number || '—'}</code></Cell>
+                  <Cell flex style={{ fontWeight: 500 }}>{r.document?.name || r.filename}</Cell>
+                  <Cell w={100}>{r.document?.nationality || '—'}</Cell>
+                  <Cell w={70}>
+                    <span style={{
+                      fontSize: '12px', fontWeight: 700,
+                      color: r.risk_score >= 75 ? 'var(--color-risk)' : r.risk_score >= 40 ? 'var(--color-review)' : 'var(--color-clear)',
+                    }}>{r.risk_score}</span>
+                  </Cell>
+                  <Cell w={110}><StatusBadge status={r.status} /></Cell>
+                  <Cell w={60}>
+                    <span style={{ color: 'var(--color-text-muted)', display: 'flex' }}>
+                      {expanded === r.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </span>
+                  </Cell>
+                </div>
 
-                  return (
-                    <React.Fragment key={r.id}>
-                      <tr
-                        className={`is-clickable${open ? ' is-open' : ''}`}
-                        onClick={() => setExpanded(open ? null : r.id)}
-                        tabIndex={0}
-                        aria-expanded={open}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setExpanded(open ? null : r.id);
-                          }
-                        }}
-                      >
-                        <td className="u-mono" style={{ whiteSpace: 'nowrap' }}>
-                          {formatTime(r.timestamp)}
-                        </td>
-                        <td className="u-mono">{r.document?.passport_number || '—'}</td>
-                        <td style={{ fontWeight: 500 }}>{r.document?.name || r.filename}</td>
-                        <td className="u-mono">{r.document?.nationality || '—'}</td>
-                        <td className="num u-mono" style={{ fontWeight: 600, color: meta.color }}>
-                          {meta.unscreened ? '—' : r.risk_score}
-                        </td>
-                        <td><StatusBadge status={r.status} /></td>
-                        <td>
-                          <ChevronDown
-                            size={15}
-                            aria-hidden="true"
-                            className={`disclosure__chevron${open ? ' disclosure__chevron--open' : ''}`}
-                            style={{ color: 'var(--color-text-muted)', display: 'block' }}
-                          />
-                        </td>
-                      </tr>
-
-                      {open && (
-                        <tr>
-                          <td colSpan={7} style={{ background: 'var(--color-bg)', padding: 'var(--space-5)' }}>
-                            <div
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                                gap: 'var(--space-6)',
-                              }}
-                            >
-                              <div>
-                                <div className="u-label" style={{ marginBottom: 'var(--space-3)' }}>
-                                  Document
-                                </div>
-                                <InfoRow label="Full name" value={r.document?.name} />
-                                <InfoRow label="Date of birth" value={r.document?.date_of_birth_fmt} mono />
-                                <InfoRow label="Expiry" value={r.document?.date_of_expiry_fmt} mono />
-                                <InfoRow label="Issuing country" value={r.document?.issuing_country} mono />
-                              </div>
-
-                              <div>
-                                <div className="u-label" style={{ marginBottom: 'var(--space-3)' }}>
-                                  Checks
-                                </div>
-                                {Object.entries(r.checks || {}).map(([key, val]) => (
-                                  <div
-                                    key={key}
-                                    style={{
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      gap: 'var(--space-3)',
-                                      marginBottom: 'var(--space-2)',
-                                    }}
-                                  >
-                                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                                      {checkLabel(key)}
-                                    </span>
-                                    <CheckBadge result={val} />
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div>
-                                <div className="u-label" style={{ marginBottom: 'var(--space-3)' }}>
-                                  Findings
-                                </div>
-                                {r.reasons?.length ? r.reasons.map((reason, i) => (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      display: 'flex',
-                                      gap: 'var(--space-2)',
-                                      fontSize: 'var(--text-sm)',
-                                      color: 'var(--color-text-secondary)',
-                                      marginBottom: 'var(--space-2)',
-                                      lineHeight: 1.5,
-                                    }}
-                                  >
-                                    <span style={{ color: meta.color, flexShrink: 0, display: 'flex', marginTop: 2 }}>
-                                      <meta.Icon size={14} aria-hidden="true" />
-                                    </span>
-                                    <span>{reason}</span>
-                                  </div>
-                                )) : (
-                                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-                                    None recorded.
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+                {/* Expanded detail */}
+                {expanded === r.id && (
+                  <div style={{ padding: '16px 20px', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+                      {/* Doc info */}
+                      <div>
+                        <div style={detailHeader}>Document Information</div>
+                        <InfoRow label="Full Name" value={r.document?.name} />
+                        <InfoRow label="Date of Birth" value={r.document?.date_of_birth_fmt} />
+                        <InfoRow label="Expiry" value={r.document?.date_of_expiry_fmt} />
+                        <InfoRow label="Issuing Country" value={r.document?.issuing_country} />
+                      </div>
+                      {/* Checks */}
+                      <div>
+                        <div style={detailHeader}>Verification Checks</div>
+                        {Object.entries(r.checks).map(([key, val]) => (
+                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{checkLabel(key)}</span>
+                            <CheckBadge result={val} />
+                          </div>
+                        ))}
+                      </div>
+                      {/* Reasons */}
+                      <div>
+                        <div style={detailHeader}>Findings</div>
+                        {r.reasons?.map((reason, i) => (
+                          <div key={i} style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: 6, display: 'flex', gap: 6 }}>
+                            <span style={{ color: r.status === 'CLEAR' ? 'var(--color-clear)' : 'var(--color-review)' }}>
+                              {r.status === 'CLEAR' ? '✓' : '⚠'}
+                            </span>
+                            {reason}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         )}
       </Card>
 
       {filtered.length > 0 && filtered.length !== history.length && (
-        <div
-          style={{
-            fontSize: 'var(--text-sm)',
-            color: 'var(--color-text-muted)',
-            textAlign: 'center',
-          }}
-        >
+        <div style={{ marginTop: 12, fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center' }}>
           Showing {filtered.length} of {history.length} records
         </div>
       )}
@@ -266,50 +174,55 @@ export default function History({ history }) {
 
 function EmptyState({ hasHistory }) {
   return (
-    <div
-      style={{
-        padding: 'var(--space-16) var(--space-5)',
-        textAlign: 'center',
-        color: 'var(--color-text-muted)',
-      }}
-    >
-      <ClipboardList size={28} style={{ opacity: 0.35, marginBottom: 'var(--space-3)' }} aria-hidden="true" />
-      <div
-        style={{
-          fontSize: 'var(--text-md)',
-          fontWeight: 500,
-          color: 'var(--color-text-secondary)',
-          marginBottom: 2,
-        }}
-      >
+    <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+      <ClipboardList size={30} style={{ marginBottom: 12, opacity: 0.3 }} />
+      <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: 4, color: 'var(--color-text-secondary)' }}>
         {hasHistory ? 'No records match your filters.' : 'No verification records yet.'}
       </div>
-      <div style={{ fontSize: 'var(--text-sm)' }}>
-        {hasHistory
-          ? 'Try a different search or status filter.'
-          : 'Completed screenings appear here.'}
+      <div style={{ fontSize: '12.5px' }}>
+        {hasHistory ? 'Try adjusting the search or status filter.' : 'Completed passport screenings will appear here.'}
       </div>
     </div>
   );
 }
 
-function InfoRow({ label, value, mono }) {
+function Cell({ children, label, w, flex, header, style = {} }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: 'var(--space-3)',
-        marginBottom: 'var(--space-2)',
-      }}
-    >
-      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>{label}</span>
-      <span
-        className={mono ? 'u-mono' : undefined}
-        style={{ fontSize: 'var(--text-sm)', fontWeight: 500, textAlign: 'right' }}
-      >
-        {value || '—'}
-      </span>
+    <div style={{
+      width: w || undefined, flex: flex ? 1 : undefined, flexShrink: flex ? 1 : 0,
+      fontSize: header ? '11px' : '12.5px',
+      fontWeight: header ? 600 : 400,
+      color: header ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+      textTransform: header ? 'uppercase' : undefined,
+      letterSpacing: header ? '0.05em' : undefined,
+      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      ...style,
+    }}>
+      {label || children}
+    </div>
+  );
+}
+
+function rowStyle(clickable = false, isHeader = false) {
+  return {
+    display: 'flex', alignItems: 'center', gap: 12, padding: '11px 20px',
+    borderBottom: '1px solid var(--color-border)',
+    cursor: clickable ? 'pointer' : undefined,
+    background: isHeader ? 'var(--color-surface-2)' : 'transparent',
+    transition: 'background var(--transition-fast)',
+  };
+}
+
+const detailHeader = {
+  fontSize: '11px', fontWeight: 600, textTransform: 'uppercase',
+  letterSpacing: '0.06em', color: 'var(--color-text-muted)', marginBottom: 10,
+};
+
+function InfoRow({ label, value }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{label}</span>
+      <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-text-primary)' }}>{value || '—'}</span>
     </div>
   );
 }
@@ -319,13 +232,18 @@ function formatTime(date) {
 }
 
 function checkLabel(key) {
-  const map = {
-    ocr: 'OCR',
-    mrz: 'MRZ',
-    expiry: 'Expiry',
-    tampering: 'Tampering',
-    face: 'Face',
-    consistency: 'Consistency',
-  };
+  const map = { ocr: 'OCR', mrz: 'MRZ', expiry: 'Expiry', tampering: 'Tampering', face: 'Face', consistency: 'Consistency' };
   return map[key] || key;
 }
+
+const searchInputStyle = {
+  width: '100%',
+  padding: '7px 32px',
+  fontSize: '13px',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text-primary)',
+  outline: 'none',
+  fontFamily: 'inherit',
+};

@@ -1,133 +1,70 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  HelpCircle,
-  MinusCircle,
-  ChevronDown,
-} from 'lucide-react';
+import React from 'react';
 
-/* ── Badge ───────────────────────────────────────────────────────────
-   Appearance lives in index.css so hover, focus and reduced-motion can
-   reach it. Inline styles can express none of those, which is why the
-   old primitives simulated hover with mouse handlers.
-   ─────────────────────────────────────────────────────────────────── */
-export function Badge({ children, variant = 'default', size = 'sm', icon }) {
+/* ── Badge ───────────────────────────────────────────────────────── */
+export function Badge({ children, variant = 'default', size = 'sm' }) {
+  const styles = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontWeight: 600,
+    letterSpacing: '0.01em',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid',
+    lineHeight: 1,
+    padding: size === 'lg' ? '6px 12px' : '3px 8px',
+    fontSize: size === 'lg' ? '13px' : '11px',
+  };
+
+  const variants = {
+    default: { background: 'var(--color-surface-2)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' },
+    clear:    { background: 'var(--color-clear-bg)', borderColor: 'var(--color-clear-border)', color: 'var(--color-clear)' },
+    review:   { background: 'var(--color-review-bg)', borderColor: 'var(--color-review-border)', color: 'var(--color-review)' },
+    risk:     { background: 'var(--color-risk-bg)', borderColor: 'var(--color-risk-border)', color: 'var(--color-risk)' },
+    info:     { background: 'var(--color-info-bg)', borderColor: '#BFCFE8', color: 'var(--color-info)' },
+    pass:     { background: 'var(--color-clear-bg)', borderColor: 'var(--color-clear-border)', color: 'var(--color-clear)' },
+    fail:     { background: 'var(--color-risk-bg)', borderColor: 'var(--color-risk-border)', color: 'var(--color-risk)' },
+    suspicious: { background: 'var(--color-review-bg)', borderColor: 'var(--color-review-border)', color: 'var(--color-review)' },
+  };
+
   return (
-    <span className={`badge badge--${variant}${size === 'lg' ? ' badge--lg' : ''}`}>
-      {icon}
+    <span style={{ ...styles, ...(variants[variant] || variants.default) }}>
       {children}
     </span>
   );
 }
 
-/* ── status vocabulary ───────────────────────────────────────────────
-   One table, so a verdict looks and reads identically on every screen.
-   Every entry carries an icon: colour alone never states an outcome.
-   ─────────────────────────────────────────────────────────────────── */
-export const STATUS = {
-  CLEAR: {
-    variant: 'clear',
-    label: 'CLEAR',
-    tone: 'clear',
-    color: 'var(--color-clear)',
-    Icon: CheckCircle2,
-    headline: 'Document cleared for entry.',
-  },
-  REVIEW: {
-    variant: 'review',
-    label: 'REVIEW',
-    tone: 'review',
-    color: 'var(--color-review)',
-    Icon: AlertTriangle,
-    headline: 'Manual review required before clearance.',
-  },
-  'HIGH-RISK': {
-    variant: 'risk',
-    label: 'HIGH RISK',
-    tone: 'risk',
-    color: 'var(--color-risk)',
-    Icon: XCircle,
-    headline: 'Document flagged. Do not clear without supervisor.',
-  },
-  UNREADABLE: {
-    variant: 'info',
-    label: 'UNREADABLE',
-    tone: 'info',
-    color: 'var(--color-info)',
-    Icon: HelpCircle,
-    headline: 'Image could not be read. Rescan the document.',
-    unscreened: true,
-  },
-  NOT_A_DOCUMENT: {
-    variant: 'info',
-    label: 'NOT A DOCUMENT',
-    tone: 'info',
-    color: 'var(--color-info)',
-    Icon: HelpCircle,
-    headline: 'No travel document found in this image.',
-    unscreened: true,
-  },
-};
-
-export function statusMeta(status) {
-  return STATUS[status] || STATUS.REVIEW;
-}
-
-export function StatusBadge({ status, size = 'sm', withIcon = false }) {
-  const meta = statusMeta(status);
-  const Icon = meta.Icon;
-
+/* ── StatusBadge ─────────────────────────────────────────────────── */
+export function StatusBadge({ status, size = 'sm' }) {
+  const map = { CLEAR: 'clear', REVIEW: 'review', 'HIGH-RISK': 'risk' };
+  // The two unscreened outcomes keep the neutral variant and read as words
+  // rather than as the API's constant.
+  const label = { UNREADABLE: 'UNREADABLE', NOT_A_DOCUMENT: 'NOT A DOCUMENT' };
   return (
-    <Badge
-      variant={meta.variant}
-      size={size}
-      icon={withIcon ? <Icon size={size === 'lg' ? 15 : 13} aria-hidden="true" /> : null}
-    >
-      {meta.label}
+    <Badge variant={map[status] || 'default'} size={size}>
+      {label[status] || status}
     </Badge>
   );
 }
 
 /* ── CheckBadge ──────────────────────────────────────────────────── */
-const CHECK_META = {
-  PASS: { variant: 'pass', Icon: CheckCircle2 },
-  FAIL: { variant: 'fail', Icon: XCircle },
-  SUSPICIOUS: { variant: 'suspicious', Icon: AlertTriangle },
-  NOT_RUN: { variant: 'default', Icon: MinusCircle },
-};
-
 export function CheckBadge({ result }) {
-  const meta = CHECK_META[result] || CHECK_META.NOT_RUN;
-  const Icon = meta.Icon;
-
-  return (
-    <Badge variant={meta.variant} icon={<Icon size={13} aria-hidden="true" />}>
-      {result === 'NOT_RUN' ? 'NOT RUN' : result}
-    </Badge>
-  );
-}
-
-/* ── CheckRow ────────────────────────────────────────────────────── */
-export function CheckRow({ name, result }) {
-  return (
-    <div className="checkrow">
-      <span className="checkrow__name">{name}</span>
-      <CheckBadge result={result} />
-    </div>
-  );
+  const map = { PASS: 'pass', FAIL: 'fail', SUSPICIOUS: 'suspicious' };
+  return <Badge variant={map[result] || 'default'}>{result}</Badge>;
 }
 
 /* ── Card ────────────────────────────────────────────────────────── */
-export function Card({ children, style = {}, className = '', onClick, interactive }) {
-  const isInteractive = interactive ?? Boolean(onClick);
-
+export function Card({ children, style = {}, className = '', onClick }) {
   return (
     <div
-      className={`card${isInteractive ? ' card--interactive' : ''}${className ? ` ${className}` : ''}`}
+      className={className}
       onClick={onClick}
-      style={style}
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-xs)',
+        ...style,
+      }}
     >
       {children}
     </div>
@@ -135,30 +72,53 @@ export function Card({ children, style = {}, className = '', onClick, interactiv
 }
 
 /* ── Button ──────────────────────────────────────────────────────── */
-export function Button({
-  children,
-  variant = 'primary',
-  size = 'md',
-  onClick,
-  disabled,
-  type = 'button',
-  style = {},
-  icon,
-  className = '',
-  ...rest
-}) {
-  const sizeClass = size === 'lg' ? ' btn--lg' : size === 'sm' ? ' btn--sm' : '';
+export function Button({ children, variant = 'primary', size = 'md', onClick, disabled, type = 'button', style = {}, icon }) {
+  const base = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    fontFamily: 'inherit',
+    fontWeight: 500,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.55 : 1,
+    border: '1px solid transparent',
+    borderRadius: 'var(--radius-md)',
+    transition: 'background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast)',
+    outline: 'none',
+    whiteSpace: 'nowrap',
+    lineHeight: 1.2,
+    ...( size === 'sm' ? { padding: '6px 12px', fontSize: '12px' } : {}),
+    ...( size === 'md' ? { padding: '8px 16px', fontSize: '13.5px' } : {}),
+    ...( size === 'lg' ? { padding: '11px 22px', fontSize: '14.5px' } : {}),
+  };
+
+  const variants = {
+    primary:   { background: 'var(--color-brand)', borderColor: 'var(--color-brand)', color: '#FFF' },
+    secondary: { background: 'var(--color-surface)', borderColor: 'var(--color-border-strong)', color: 'var(--color-text-primary)' },
+    ghost:     { background: 'transparent', borderColor: 'transparent', color: 'var(--color-text-secondary)' },
+    danger:    { background: 'var(--color-risk)', borderColor: 'var(--color-risk)', color: '#FFF' },
+  };
 
   return (
     <button
       type={type}
-      onClick={onClick}
       disabled={disabled}
-      className={`btn btn--${variant}${sizeClass}${className ? ` ${className}` : ''}`}
-      style={style}
-      {...rest}
+      onClick={onClick}
+      style={{ ...base, ...(variants[variant] || variants.primary), ...style }}
+      onMouseEnter={(e) => {
+        if (disabled) return;
+        if (variant === 'primary') e.currentTarget.style.background = 'var(--color-brand-light)';
+        if (variant === 'secondary') e.currentTarget.style.background = 'var(--color-surface-2)';
+        if (variant === 'ghost') e.currentTarget.style.background = 'var(--color-bg-subtle)';
+      }}
+      onMouseLeave={(e) => {
+        if (disabled) return;
+        const v = variants[variant] || variants.primary;
+        e.currentTarget.style.background = v.background;
+      }}
     >
-      {icon}
+      {icon && <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>}
       {children}
     </button>
   );
@@ -166,22 +126,19 @@ export function Button({
 
 /* ── Divider ─────────────────────────────────────────────────────── */
 export function Divider({ style = {} }) {
-  return (
-    <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', ...style }} />
-  );
+  return <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0', ...style }} />;
 }
 
 /* ── Spinner ─────────────────────────────────────────────────────── */
-export function Spinner({ size = 20, color = 'var(--color-accent)' }) {
+export function Spinner({ size = 20, color = 'var(--color-brand)' }) {
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      className="spin"
+      width={size} height={size}
+      viewBox="0 0 24 24" fill="none"
+      style={{ animation: 'spin 0.8s linear infinite' }}
       aria-hidden="true"
     >
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.2" />
       <path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
     </svg>
@@ -191,227 +148,12 @@ export function Spinner({ size = 20, color = 'var(--color-accent)' }) {
 /* ── SectionHeader ───────────────────────────────────────────────── */
 export function SectionHeader({ title, subtitle, action }) {
   return (
-    <div className="section-header">
-      <div className="section-header__text">
-        <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, marginBottom: subtitle ? 2 : 0 }}>
-          {title}
-        </h2>
-        {subtitle && (
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-            {subtitle}
-          </p>
-        )}
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+      <div>
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: subtitle ? 4 : 0 }}>{title}</h2>
+        {subtitle && <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{subtitle}</p>}
       </div>
-      {action && <div className="section-header__action">{action}</div>}
-    </div>
-  );
-}
-
-/* ── RiskGauge ───────────────────────────────────────────────────────
-   The arc sweeps and the numeral counts up from zero, so the score
-   registers as a magnitude rather than a figure. Both settle on the
-   true value immediately when reduced motion is requested.
-   ─────────────────────────────────────────────────────────────────── */
-export function RiskGauge({ score = 0, status, size = 108 }) {
-  const meta = statusMeta(status);
-  const [shown, setShown] = useState(0);
-  const frame = useRef();
-
-  useEffect(() => {
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-    if (reduced) {
-      setShown(score);
-      return undefined;
-    }
-
-    const start = performance.now();
-
-    const tick = (now) => {
-      const t = Math.min(1, (now - start) / 600);
-      // The same ease-out the arc uses, so numeral and sweep stay together.
-      setShown(Math.round(score * (1 - Math.pow(1 - t, 3))));
-
-      if (t < 1) frame.current = requestAnimationFrame(tick);
-    };
-
-    frame.current = requestAnimationFrame(tick);
-
-    return () => cancelAnimationFrame(frame.current);
-  }, [score]);
-
-  const stroke = 8;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  // Three-quarter arc, opening at the bottom.
-  const arcLength = circumference * 0.75;
-  const clamped = Math.min(100, Math.max(0, score));
-  const offset = arcLength * (1 - clamped / 100);
-
-  return (
-    <div
-      className="gauge"
-      style={{ width: size, height: size }}
-      role="img"
-      aria-label={`Risk score ${score} out of 100`}
-    >
-      <svg width={size} height={size} style={{ display: 'block' }} aria-hidden="true">
-        <g transform={`rotate(135 ${size / 2} ${size / 2})`}>
-          <circle
-            className="gauge__track"
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            strokeWidth={stroke}
-            stroke="currentColor"
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeLinecap="round"
-          />
-          <circle
-            className="gauge__arc"
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            strokeWidth={stroke}
-            stroke={meta.color}
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeDashoffset={offset}
-          />
-        </g>
-      </svg>
-
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingBottom: Math.round(size * 0.06),
-        }}
-      >
-        <span className="gauge__value" style={{ color: meta.color }}>{shown}</span>
-        <span className="gauge__caption">Risk</span>
-      </div>
-    </div>
-  );
-}
-
-/* ── Disclosure ──────────────────────────────────────────────────────
-   Detail an officer asks for, rather than detail competing with the
-   verdict for the first second of attention.
-   ─────────────────────────────────────────────────────────────────── */
-export function Disclosure({ title, count, children, defaultOpen = false, id = 'disclosure' }) {
-  const [open, setOpen] = useState(defaultOpen);
-  const panelId = `${id}-panel`;
-
-  return (
-    <div className="card">
-      <button
-        type="button"
-        className="disclosure__trigger"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <span className="u-label" style={{ color: 'var(--color-text-secondary)' }}>{title}</span>
-          {count != null && <Badge variant="default">{count}</Badge>}
-        </span>
-
-        <ChevronDown
-          size={17}
-          className={`disclosure__chevron${open ? ' disclosure__chevron--open' : ''}`}
-          aria-hidden="true"
-        />
-      </button>
-
-      {open && (
-        <div id={panelId} className="disclosure__panel">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── StatTile ────────────────────────────────────────────────────── */
-export function StatTile({ label, value, tone = 'default', icon }) {
-  const color =
-    tone === 'clear' ? 'var(--color-clear)'
-      : tone === 'review' ? 'var(--color-review)'
-        : tone === 'risk' ? 'var(--color-risk)'
-          : 'var(--color-text-primary)';
-
-  return (
-    <Card>
-      <div className="stat">
-        <div className="stat__row">
-          {icon && <span style={{ color, display: 'flex' }}>{icon}</span>}
-          <span className="u-label">{label}</span>
-        </div>
-        <span className="stat__value" style={{ color }}>{value}</span>
-      </div>
-    </Card>
-  );
-}
-
-/* ── ScanProgress ────────────────────────────────────────────────────
-   OCR is about 3.4s of a ~4.5s verification, so one spinner would sit
-   still for almost the whole wait. Naming the stages shows the officer
-   that work is moving and where the time goes.
-   ─────────────────────────────────────────────────────────────────── */
-export const SCAN_STAGES = [
-  { key: 'ocr', label: 'Reading document', ms: 3400 },
-  { key: 'mrz', label: 'Validating MRZ', ms: 400 },
-  { key: 'forensics', label: 'Forensic analysis', ms: 500 },
-  { key: 'risk', label: 'Scoring risk', ms: 300 },
-];
-
-export function ScanProgress() {
-  const [stage, setStage] = useState(0);
-
-  useEffect(() => {
-    const timers = [];
-    let elapsed = 0;
-
-    SCAN_STAGES.forEach((s, index) => {
-      elapsed += s.ms;
-
-      if (index < SCAN_STAGES.length - 1) {
-        timers.push(setTimeout(() => setStage(index + 1), elapsed));
-      }
-    });
-
-    return () => timers.forEach(clearTimeout);
-  }, []);
-
-  return (
-    <div className="scan">
-      <div
-        className="scan__stages"
-        role="status"
-        aria-live="polite"
-        aria-label={`Verification in progress: ${SCAN_STAGES[stage].label}`}
-      >
-        {SCAN_STAGES.map((s, index) => (
-          <div
-            key={s.key}
-            className={
-              'scan__stage'
-              + (index === stage ? ' scan__stage--active' : '')
-              + (index < stage ? ' scan__stage--done' : '')
-            }
-          >
-            <div className="scan__bar" />
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
+      {action && <div>{action}</div>}
     </div>
   );
 }

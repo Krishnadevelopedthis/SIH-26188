@@ -18,12 +18,12 @@ export default function Settings() {
           note={
             USE_MOCK
               ? 'Set USE_MOCK to false in src/api/verification.js to use the real backend.'
-              : 'Requests go to VITE_API_BASE.'
+              : 'Requests go to VITE_API_URL.'
           }
         />
         <SettingRow
           label="Endpoint"
-          value={USE_MOCK ? '—' : (import.meta.env.VITE_API_BASE || 'http://localhost:8000')}
+          value={USE_MOCK ? '—' : (import.meta.env.VITE_API_URL || 'not configured')}
           mono
         />
         <SettingRow label="Route" value="POST /verify" mono last />

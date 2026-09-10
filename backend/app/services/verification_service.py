@@ -19,6 +19,9 @@ from ml.src.inference.passport_verification import verify_passport_identity
 def verify_document(image_path: str) -> VerificationResponse:
     total_start = perf_counter()
 
+        print("[VERIFY] Starting document verification")
+    print(f"[VERIFY] File: {image_path}")
+
     path = Path(image_path)
 
     if not path.exists():
@@ -30,6 +33,8 @@ def verify_document(image_path: str) -> VerificationResponse:
     # OCR + MRZ
     # ---------------------------------------------------------
     start = perf_counter()
+    print("[VERIFY] Starting OCR + MRZ...")
+
 
     passport_result = verify_passport_identity(
         str(path)
@@ -110,6 +115,7 @@ def verify_document(image_path: str) -> VerificationResponse:
     # Forensic ML
     # ---------------------------------------------------------
     start = perf_counter()
+    print("[VERIFY] Starting forensic ML...")
 
     ml_result = analyze_passport(
         str(path)
@@ -215,6 +221,7 @@ def verify_document(image_path: str) -> VerificationResponse:
     issuing_country = mrz_result.get(
             "issuing_country"
         )
+    print("[VERIFY] Verification completed successfully")
 
     # ---------------------------------------------------------
     # Final API response
@@ -283,3 +290,5 @@ def verify_document(image_path: str) -> VerificationResponse:
 
         reasons=reasons,
     )
+
+

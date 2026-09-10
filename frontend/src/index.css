@@ -71,7 +71,10 @@ h1, h2, h3 { font-family: 'Space Grotesk', 'DM Sans', sans-serif; letter-spacing
   .app-sidebar { position: fixed !important; z-index: 300; transform: translateX(-102%); box-shadow: var(--shadow-lg); }
   .app-sidebar.open { transform: translateX(0); }
   .mobile-menu-button { display: inline-flex !important; }
-  .sidebar-backdrop { display: block !important; }
+  /* Only while the drawer is open. Unconditionally, this covers the
+     whole viewport below 900px: it dims and blurs the page, and being
+     a full-inset button at z-index 250 it also swallows every click. */
+  .sidebar-backdrop.open { display: block !important; }
   .topbar { padding: 0 18px !important; }
   .dashboard-content { padding: 26px 20px; }
   .dashboard-hero { padding: 38px 28px !important; }

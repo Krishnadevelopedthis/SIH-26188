@@ -19,7 +19,11 @@ app = FastAPI(
 # the local dev server means the hosted frontend is refused by the browser.
 # The default covers Vite, which moves to the next free port when 5173 is busy.
 DEFAULT_ALLOWED_ORIGINS = [
+    // working origin
     "https://sih-26188-six.vercel.app",
+     "https://www.airoease.live",
+    "https://airoease.live",
+// local origin
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",

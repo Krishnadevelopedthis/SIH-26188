@@ -19,31 +19,29 @@ app = FastAPI(
 # the local dev server means the hosted frontend is refused by the browser.
 # The default covers Vite, which moves to the next free port when 5173 is busy.
 DEFAULT_ALLOWED_ORIGINS = [
-        "https://sih-26188-six.vercel.app",
-     "https://www.airoease.live",
+    "https://sih-26188-six.vercel.app",
     "https://airoease.live",
+    "https://www.airoease.live",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
 ]
 
-allowed_origins = [
+# ALLOWED_ORIGINS adds to the defaults rather than replacing them, so setting
+# it for a new domain cannot silently lock out the frontends already live.
+extra_origins = [
     origin.strip()
     for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
-] or DEFAULT_ALLOWED_ORIGINS
+]
+
+allowed_origins = list(dict.fromkeys(DEFAULT_ALLOWED_ORIGINS + extra_origins))
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-         "https://airoease.live",
-        "https://www.airoease.live",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

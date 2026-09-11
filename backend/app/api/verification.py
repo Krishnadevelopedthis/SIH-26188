@@ -4,6 +4,10 @@ from tempfile import NamedTemporaryFile
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from backend.app.schemas.verification import VerificationResponse
+from backend.app.services.image_normalizer import (
+    UnreadableImageError,
+    normalize_upload,
+)
 from backend.app.services.verification_service import verify_document
 
 
@@ -46,6 +50,14 @@ async def verify_passport(
                 status_code=400,
                 detail="Uploaded file is empty.",
             )
+
+        try:
+            file_bytes, suffix = normalize_upload(file_bytes, suffix)
+        except UnreadableImageError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=str(exc),
+            ) from exc
 
         with NamedTemporaryFile(
             delete=False,
